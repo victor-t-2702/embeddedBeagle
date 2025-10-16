@@ -126,44 +126,49 @@ int main() {
 
         clock_gettime(CLOCK_MONOTONIC, &start); // Get the current value of the monotonic clock (only moves forward) and store it in the "start" struct timespec
 
-        while (getJoyDir(fd, speed_hz) == CENTER) { // Wait for input
+        ledOff(); // turn off LEDs
+        while (true) {
+            playerDir = getJoyDir(fd, speed_hz); // record what direction player pressed
             clock_gettime(CLOCK_MONOTONIC, &end);
             elapsed = (end.tv_sec - start.tv_sec)*1000 + (end.tv_nsec - start.tv_nsec) / 1000000; // Calculate elapsed time in ms (divide nanoseconds member variable by 10^6)
-            if (elapsed > 5000) {
-                printf("Took too long!\n\n"); // If player does not make a move in 5 seconds, end program
+            if (playerDir == CENTER) { 
+                if (elapsed > 5000) {
+                    printf("Took too long!\n\n"); // If player does not make a move in 5 seconds, end program
+                    closeAll(fd); // clean up
+                    return 0;
+                }
+                continue; // if no input, restart loop
+            }
+            else if (playerDir == correctDir) {
+                printf("Correct!\n");
+                if (elapsed < bestTime) {
+                    printf("New best time!\n");
+                    bestTime = elapsed; // new best time set
+                }
+                printf("Your reaction time was %dms; best so far is %dms\n\n", elapsed, bestTime);
+                for (int j = 0; j < 5; j++) { // flash green LED on/off five times in one second
+                    setLedBrightness("1", 'g');
+                    nanosleep(&flashDelay, NULL); // sleep for 0.1 sec
+                    setLedBrightness("0", 'g');
+                    nanosleep(&flashDelay, NULL); // sleep for 0.1 sec
+                }
+                break; // move back to main game loop
+            }
+            else if (playerDir != LEFT && playerDir != RIGHT) {
+                printf("Incorrect...\n\n");
+                for (int j = 0; j < 5; j++) { // flash red LED on/off five times in one second
+                    setLedBrightness("1", 'r');
+                    nanosleep(&flashDelay, NULL); // sleep for 0.1 sec
+                    setLedBrightness("0", 'r');
+                    nanosleep(&flashDelay, NULL); // sleep for 0.1 sec
+                }
+                break; // move back to main game loop
+            }
+            else { // quit program if left or right are pressed
+                printf("User selected to quit.\n");
                 closeAll(fd); // clean up
                 return 0;
             }
-        }
-        ledOff(); // turn off LEDs
-        playerDir = getJoyDir(fd, speed_hz); // record what direction player pressed
-        if (playerDir == correctDir) {
-            printf("Correct!\n");
-            if (elapsed < bestTime) {
-                printf("New best time!\n");
-                bestTime = elapsed; // new best time set
-            }
-            printf("Your reaction time was %dms; best so far is %dms\n\n", elapsed, bestTime);
-            for (int j = 0; j < 5; j++) { // flash green LED on/off five times in one second
-                setLedBrightness("1", 'g');
-                nanosleep(&flashDelay, NULL); // sleep for 0.1 sec
-                setLedBrightness("0", 'g');
-                nanosleep(&flashDelay, NULL); // sleep for 0.1 sec
-            }
-        }
-        else if (playerDir != LEFT && playerDir != RIGHT) {
-            printf("Incorrect...\n\n");
-            for (int j = 0; j < 5; j++) { // flash red LED on/off five times in one second
-                setLedBrightness("1", 'r');
-                nanosleep(&flashDelay, NULL); // sleep for 0.1 sec
-                setLedBrightness("0", 'r');
-                nanosleep(&flashDelay, NULL); // sleep for 0.1 sec
-            }
-        }
-        else { // quit program if left or right are pressed
-            printf("User selected to quit.\n");
-            closeAll(fd); // clean up
-            return 0;
         }
            
     }

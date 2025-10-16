@@ -1,0 +1,156 @@
+victor@VictorQueen:~$ ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 08:00:27:0e:de:65 brd ff:ff:ff:ff:ff:ff
+    altname enx0800270ede65
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global dynamic noprefixroute enp0s3
+       valid_lft 83549sec preferred_lft 83549sec
+    inet6 fd17:625c:f037:2:719d:3b56:7a2:7891/64 scope global temporary dynamic 
+       valid_lft 86351sec preferred_lft 14351sec
+    inet6 fd17:625c:f037:2:a00:27ff:fe0e:de65/64 scope global dynamic mngtmpaddr noprefixroute 
+       valid_lft 86351sec preferred_lft 14351sec
+    inet6 fe80::a00:27ff:fe0e:de65/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+5: enx1cba8ca2ed6a: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 1c:ba:8c:a2:ed:6a brd ff:ff:ff:ff:ff:ff
+    inet 192.168.7.1/24 brd 192.168.7.255 scope global dynamic noprefixroute enx1cba8ca2ed6a
+       valid_lft 1156sec preferred_lft 1156sec
+    inet6 fe80::f65e:cf13:c1c:e79d/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+victor@VictorQueen:~$ ping vgt1-beagle
+PING vgt1-beagle (fe80::1eba:8cff:fea2:ed6b%enx1cba8ca2ed6a) 56 data bytes
+64 bytes from vgt1-beagle (fe80::1eba:8cff:fea2:ed6b%enx1cba8ca2ed6a): icmp_seq=1 ttl=64 time=3.02 ms
+64 bytes from vgt1-beagle (fe80::1eba:8cff:fea2:ed6b%enx1cba8ca2ed6a): icmp_seq=2 ttl=64 time=9.70 ms
+^C
+--- vgt1-beagle ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1005ms
+rtt min/avg/max/mdev = 3.016/6.358/9.701/3.342 ms
+victor@VictorQueen:~$ ssh victor@vgt1-beagle
+Debian GNU/Linux 13
+
+BeagleBoard.org Debian Trixie Xfce Image 2025-08-29
+Support: https://bbb.io/debian
+default username is [victor]
+
+
+  o         o     o         o              o     o                o                                           
+ <|>       <|>  _<|>_      <|>            <|>  _<|>_             <|>                                          
+ < >       < >             < >            < >                    < >                                          
+  |         |     o         \o            o/     o        __o__   |        o__ __o    \o__ __o                
+  o__/_ _\__o    <|>         v\          /v     <|>      />  \    o__/_   /v     v\    |     |>               
+  |         |    / \          <\        />      / \    o/         |      />       <\  / \   < >               
+ <o>       <o>   \o/            \o    o/        \o/   <|          |      \         /  \o/        o    o    o  
+  |         |     |              v\  /v          |     \\         o       o       o    |        <|>  <|>  <|> 
+ / \       / \   / \              <\/>          / \     _\o__</   <\__    <\__ __/>   / \       < >  < >  < > 
+                                                                                                              
+                                                                                                              
+                                                                                                              
+Last login: Wed Oct 15 20:45:49 2025 from 192.168.7.1
+Are you ready to test your reaction time? No? TOO BAD!! When the LEDs light up, press the joystick in that direction
+
+Get ready...
+Press DOWN!
+
+Correct!
+New best time!
+Your reaction time was 486ms; best so far is 486ms
+
+Get ready...
+Press UP!
+
+Incorrect...
+
+Get ready...
+Press UP!
+
+Correct!
+Your reaction time was 556ms; best so far is 486ms
+
+Get ready...
+Please let go of joystick
+
+Press UP!
+
+Correct!
+Your reaction time was 589ms; best so far is 486ms
+
+Get ready...
+Too soon
+
+Get ready...
+Press DOWN!
+
+Correct!
+Your reaction time was 732ms; best so far is 486ms
+
+Get ready...
+Press DOWN!
+
+User selected to quit.
+victor@vgt1-beagle:~$ sudo ~/internetToTarget.sh
+victor@vgt1-beagle:~$ ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: dummy0: <BROADCAST,NOARP> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether 1a:02:6b:cc:9a:fd brd ff:ff:ff:ff:ff:ff
+3: eth0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 04:25:e8:b1:02:c4 brd ff:ff:ff:ff:ff:ff
+    altname enx0425e8b102c4
+4: wlan0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 68:23:b0:1e:d6:22 brd ff:ff:ff:ff:ff:ff
+5: SoftAp0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 6a:23:b0:1e:d6:23 brd ff:ff:ff:ff:ff:ff
+6: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default 
+    link/ether 02:42:8c:64:68:ba brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+7: usb0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 1c:ba:8c:a2:ed:6b brd ff:ff:ff:ff:ff:ff
+    inet 192.168.7.2/24 brd 192.168.7.255 scope global usb0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::1eba:8cff:fea2:ed6b/64 scope link proto kernel_ll 
+       valid_lft forever preferred_lft forever
+victor@vgt1-beagle:~$ ping 192.168.7.1
+PING 192.168.7.1 (192.168.7.1) 56(84) bytes of data.
+64 bytes from 192.168.7.1: icmp_seq=1 ttl=64 time=4.11 ms
+64 bytes from 192.168.7.1: icmp_seq=2 ttl=64 time=3.46 ms
+^C
+--- 192.168.7.1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 999ms
+rtt min/avg/max/mdev = 3.464/3.789/4.114/0.325 ms
+victor@vgt1-beagle:~$ ping google.ca
+PING google.ca (142.250.73.67) 56(84) bytes of data.
+64 bytes from pnseaa-am-in-f3.1e100.net (142.250.73.67): icmp_seq=1 ttl=254 time=29.4 ms
+64 bytes from pnseaa-am-in-f3.1e100.net (142.250.73.67): icmp_seq=2 ttl=254 time=25.4 ms
+^C
+--- google.ca ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1000ms
+rtt min/avg/max/mdev = 25.383/27.407/29.432/2.024 ms
+victor@vgt1-beagle:~$ cat /boot/firmware/ID.txt
+BeagleBoard.org Debian Trixie Xfce Image 2025-08-29
+victor@vgt1-beagle:~$ cat /proc/version
+Linux version 6.1.83-ti-arm64-r72 (voodoo@rpi5b8g-66) (gcc (Debian 14.2.0-19) 14.2.0, GNU ld (GNU Binutils for Debian) 2.44) #1trixie SMP PREEMPT_DYNAMIC Wed Aug  6 18:28:52 UTC 2025
+victor@vgt1-beagle:~$ cat /proc/uptime
+336.24 1263.13
+victor@vgt1-beagle:~$ ./mountNFS.sh
+victor@vgt1-beagle:~$ cd /mnt/remote
+victor@vgt1-beagle:/mnt/remote$ ls
+accessSPI    helloworld_target  motd    nfs_message.txt
+accessSPI.c  led_tutorial       myApps
+victor@vgt1-beagle:/mnt/remote$ cd myApps
+victor@vgt1-beagle:/mnt/remote/myApps$ ls
+ReactionTimer
+victor@vgt1-beagle:/mnt/remote/myApps$ exit
+logout
+Connection to vgt1-beagle closed.
+victor@VictorQueen:~$ 
+
