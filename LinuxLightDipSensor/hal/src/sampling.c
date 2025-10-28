@@ -22,6 +22,10 @@ static struct samples_struct
 
     int currentDataSize;
     int historyDataSize;
+
+    long long totalSamples;
+    double sampleAverage;
+
 } samples;
 
 
@@ -48,6 +52,7 @@ void sampling_init(void)
     assert(!is_initialized);
     is_initialized = true;
     sampling = true;
+    samples.totalSamples = 0;
     samples.current = samples.currentData;
     samples.history = samples.historyData;
     samples.currentDataSize = 0;
@@ -91,8 +96,14 @@ void* sample(void* arg)
             long long elapsed_time = current_time - start_time;
             if(elapsed_time < 1000){
                 samples.currentData[samples.currentDataSize] = read_ch(0, 500);
-                //Implementing the spi here currentData[index] = read;
+                if(samples.totalSamples == 0){
+                    samples.sampleAverage = samples.currentData[samples.currentDataSize];
+                }
+                else{
+                    samples.sampleAverage = samples.sampleAverage*0.999 + samples.currentData[samples.currentDataSize]*0.001;
+                }
                 samples.currentDataSize++;
+                samples.totalSamples++;
             }
             if(elapsed_time >= 1000){
                 break;
@@ -124,6 +135,25 @@ double* getSamplerHistory(int* size)
     pthread_mutex_unlock(&data_mutex);
 
     return output;
+}
+
+double getSampleAverage(void)
+{
+    assert(is_initialized);
+    pthread_mutex_lock(&data_mutex);
+    long long average = samples.sampleAverage;
+    pthread_mutex_unlock(&data_mutex);
+    return average;
+}
+
+long long getTotalSample(void)
+{
+    assert(is_initialized);
+    pthread_mutex_lock(&data_mutex);
+    long long total = samples.totalSamples;
+    pthread_mutex_unlock(&data_mutex);
+    return total;
+    
 }
 
 void sampling_cleanup(void)

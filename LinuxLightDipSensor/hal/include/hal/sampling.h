@@ -7,5 +7,7 @@
 void sampling_init(void);
 double* getSamplerHistory(int* size);
 void sampling_cleanup(void);
+double getSampleAverage(void);
+long long getTotalSample(void);
 
 #endif
