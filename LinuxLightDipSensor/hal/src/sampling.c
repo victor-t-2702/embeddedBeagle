@@ -1,5 +1,6 @@
 
 #include "hal/sampling.h"
+#include "hal/accessSPI.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -11,14 +12,21 @@
 static bool is_initialized = false;
 static bool sampling = false;
 
-static double currentData[1000];
-static double historyData[1000];
-static double *current = currentData;
-static double *history = historyData;
-#define CURRENT_DATA_SIZE 1000
-#define HISTORY_DATA_SIZE 1000
+static struct samples_struct
+{
+    double currentData[1000];
+    double historyData[1000];
+
+    double *current;
+    double *history;
+
+    int currentDataSize;
+    int historyDataSize;
+} samples;
+
 
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t sampling_thread;
 
 static long long getTimeInMs(void)
 {
@@ -30,6 +38,9 @@ static long long getTimeInMs(void)
     return milliSeconds;
 }
 
+void currentDataToHistory(void);
+void* sample(void*);
+
 //Intializes the sampling thread
 void sampling_init(void) 
 {
@@ -37,52 +48,90 @@ void sampling_init(void)
     assert(!is_initialized);
     is_initialized = true;
     sampling = true;
-    pthread_t sampling_thread;
-    pthread_create(&sampling_thread, NULL, sample, NULL);
+    samples.current = samples.currentData;
+    samples.history = samples.historyData;
+    samples.currentDataSize = 0;
+    samples.historyDataSize = 0;
+    
+    int thread_result = pthread_create(&sampling_thread, NULL, sample, NULL);
+
+    
+    if (thread_result != 0) {
+        perror("Error when creating thread");
+        exit(EXIT_FAILURE);
+    }
 
 }
 
-void sample(sampling)
+void currentDataToHistory(void)
+{
+    pthread_mutex_lock(&data_mutex);
+    double *temp = samples.current;
+    samples.current = samples.history;
+    samples.history = temp;
+    for(int i = 0; i < samples.currentDataSize; i++)
+    {
+        samples.current[i] = 0;
+    }
+    samples.historyDataSize = samples.currentDataSize;
+    samples.currentDataSize = 0;
+    pthread_mutex_unlock(&data_mutex);
+
+}
+
+
+void* sample(void* arg)
 {
     assert(is_initialized);
     while(sampling){
         long long start_time = getTimeInMs();
 
-
         while(true){
             long long current_time = getTimeInMs();
             long long elapsed_time = current_time - start_time;
             if(elapsed_time < 1000){
-                //read spi
+                samples.currentData[samples.currentDataSize] = read_ch(0, 500);
+                //Implementing the spi here currentData[index] = read;
+                samples.currentDataSize++;
             }
             if(elapsed_time >= 1000){
                 break;
             }   
         }    
-        currentDataToHistory()
-        usleep(1000)
+        usleep(1000);
+        currentDataToHistory();
+
     }
+
+    return arg;
 }
 
 
-void currentDataToHistory(void)
-{
-    pthread_mutex_lock(data_mutex, NULL);
-    double *temp = current;
-    current = history;
-    history = temp;
-    pthread_mutex_unlock(data_mutex, NULL);
-
-}
-
-double getSamplerHistory(double* storage, int* size)
+double* getSamplerHistory(int* size)
 {
     assert(is_initialized);
-    *size = HISTORY_DATA_SIZE;
     pthread_mutex_lock(&data_mutex);
-    for(int i = 0; i < HISTORY_DATA_SIZE; i++){
-        storage[i] = historyData[i];
+    double* output = malloc(samples.historyDataSize * sizeof(double));
+    if (output == NULL) {
+        pthread_mutex_unlock(&data_mutex);
+        perror("Error allocating output buffer");
+        exit(EXIT_FAILURE);
+    }
+    *size = samples.historyDataSize;
+    for(int i = 0; i < samples.historyDataSize; i++){
+        output[i] = samples.history[i];
     }
     pthread_mutex_unlock(&data_mutex);
+
+    return output;
 }
 
+void sampling_cleanup(void)
+{
+    assert(is_initialized);
+    sampling = false;
+
+    pthread_join(sampling_thread, NULL);
+    is_initialized = false;
+
+}

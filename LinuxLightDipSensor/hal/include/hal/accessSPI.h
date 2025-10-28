@@ -18,7 +18,9 @@ typedef enum {
 
 int spi_init(const char* dev, uint32_t speed_hz);
 
-void spi_close(int fd);
+void spi_close(void);
+
+int read_ch(int ch, uint32_t speed_hz);
 
 JoyDir getJoyDir(int fd, uint32_t speed_hz);
 

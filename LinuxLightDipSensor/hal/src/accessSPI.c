@@ -14,7 +14,7 @@
 
 
 static bool is_initialized = false; // bool to easily check if joystick is initialized
-
+static int fd;
 // Initialize SPI device and return file descriptor
 int spi_init(const char* dev, uint32_t speed_hz) {
     assert(!is_initialized); // check if SPI device is already initialized
@@ -24,7 +24,7 @@ int spi_init(const char* dev, uint32_t speed_hz) {
     uint8_t bits = 8;
     //uint32_t speed_hz = 250000;
 
-    int fd = open(dev, O_RDWR);  // open is a low-level system call that returns a raw file descriptor (which is what ioctl() wants), not a FILE* like fopen() returns
+    fd = open(dev, O_RDWR);  // open is a low-level system call that returns a raw file descriptor (which is what ioctl() wants), not a FILE* like fopen() returns
 
     if (fd < 0) {  // if open() fails, it returns -1
         perror("open");
@@ -51,7 +51,7 @@ int spi_init(const char* dev, uint32_t speed_hz) {
 }
 
 // Read a channel from MCP3208 ADC chip
-static int read_ch(int fd, int ch, uint32_t speed_hz) {  // marked static because only functions within this file (eg. getJoyDir()) will use it
+int read_ch(int ch, uint32_t speed_hz) {  // marked static because only functions within this file (eg. getJoyDir()) will use it
     usleep(500); // sleep for 500 microseconds before doing a read to avoid garbage SPI data
     
     assert(is_initialized); // check if joystick has been properly initialized
@@ -76,37 +76,37 @@ static int read_ch(int fd, int ch, uint32_t speed_hz) {  // marked static becaus
 }
 
 
-void spi_close(int fd) {
+void spi_close(void) {
     assert(is_initialized);
     is_initialized = false;
     close(fd);
 }
 
-JoyDir getJoyDir(int fd, uint32_t speed_hz) { // We always want to check both channels (i.e. x and y directions)
-    assert(is_initialized); // check if joystick has been properly initialized
+// JoyDir getJoyDir(int fd, uint32_t speed_hz) { // We always want to check both channels (i.e. x and y directions)
+//     assert(is_initialized); // check if joystick has been properly initialized
     
-    int joyVal_X = read_ch(fd, 0, speed_hz); // check channel 0 (X direction)
-    //printf("X = %d", joyVal_X);
-    int joyVal_Y = read_ch(fd, 1, speed_hz); // check channel 1 (Y direction)
-    //printf("Y = %d", joyVal_Y);
+//     int joyVal_X = read_ch(0, speed_hz); // check channel 0 (X direction)
+//     //printf("X = %d", joyVal_X);
+//     int joyVal_Y = read_ch(1, speed_hz); // check channel 1 (Y direction)
+//     //printf("Y = %d", joyVal_Y);
 
-    if (joyVal_Y <= 2600 && joyVal_Y >= 1500 && joyVal_X <= 2600 && joyVal_X >= 1500) {
-        return CENTER;
-    }
-    else if (joyVal_Y > 2600) {
-        return UP;
-    }
-    else if (joyVal_Y < 1500) {
-        return DOWN;
-    }
-    else if (joyVal_X > 2600) {
-        return RIGHT;
-    }
-    else if (joyVal_X < 1500) {
-        return LEFT;
-    }
-    else {
-        return UNDEFINED;
-    }
-}
+//     if (joyVal_Y <= 2600 && joyVal_Y >= 1500 && joyVal_X <= 2600 && joyVal_X >= 1500) {
+//         return CENTER;
+//     }
+//     else if (joyVal_Y > 2600) {
+//         return UP;
+//     }
+//     else if (joyVal_Y < 1500) {
+//         return DOWN;
+//     }
+//     else if (joyVal_X > 2600) {
+//         return RIGHT;
+//     }
+//     else if (joyVal_X < 1500) {
+//         return LEFT;
+//     }
+//     else {
+//         return UNDEFINED;
+//     }
+// }
 
