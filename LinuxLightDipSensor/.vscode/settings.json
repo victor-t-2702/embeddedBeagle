@@ -1,3 +1,7 @@
 {
-    "C_Cpp.codeAnalysis.clangTidy.enabled": true
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "files.associations": {
+        "pwm.h": "c",
+        "compare": "c"
+    }
 }

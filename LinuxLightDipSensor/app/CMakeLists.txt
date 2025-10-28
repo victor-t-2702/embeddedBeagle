@@ -13,9 +13,9 @@ target_link_libraries(LinuxLightDipSensor LINK_PRIVATE hal)
 target_link_libraries(LinuxLightDipSensor LINK_PRIVATE gpiod)
 
 
-# Copy executable to final location (change `hello_world` to project name as needed)
-#add_custom_command(TARGET LinuxLightDipSensor POST_BUILD 
-#  COMMAND "${CMAKE_COMMAND}" -E copy 
-#     "$<TARGET_FILE:LinuxLightDipSensor>"
-#     "~/embeddedBeagle/public/myApps/LinuxLightDipSensor" 
-#  COMMENT "Copying ARM executable to public NFS directory")
+#Copy executable to final location (change `hello_world` to project name as needed)
+add_custom_command(TARGET LinuxLightDipSensor POST_BUILD 
+ COMMAND "${CMAKE_COMMAND}" -E copy 
+    "$<TARGET_FILE:LinuxLightDipSensor>"
+    "~/ENSC351/public/myApps/LinuxLightDipSensor" 
+ COMMENT "Copying ARM executable to public NFS directory")
