@@ -1,5 +1,6 @@
 #define duty_cycle_setting "/dev/hat/pwm/GPIO12/duty_cycle"
 #define period_setting "/dev/hat/pwm/GPIO12/period"
+#define ENABLE_SETTING "/dev/hat/pwm/GPIO12/enable"
 
 #include "hal/PWM.h"
 #include <stdio.h>
@@ -15,6 +16,20 @@ void PWM_init(void)
     //printf("PWM - Initializing\n");
     assert(!is_initialized);
     is_initialized = true;
+
+    FILE *pEnableFile = fopen(ENABLE_SETTING, "w");
+    if (pEnableFile == NULL) {
+        perror("Error opening enable file");
+        exit(EXIT_FAILURE);
+    }
+
+    int enable = fprintf(pEnableFile, "1");
+
+    if(enable <= 0){
+        perror("Error writing to enable file");
+        exit(EXIT_FAILURE);
+    }
+    fclose(pEnableFile);
 }
 
 void set_period(int period)
@@ -59,5 +74,19 @@ void PWM_cleanup(void)
 {
     assert(is_initialized);
     is_initialized = false;
+    FILE *pEnableFile = fopen(ENABLE_SETTING, "w");
+    if (pEnableFile == NULL) {
+        perror("Error opening enable file");
+        exit(EXIT_FAILURE);
+    }
+
+    int enable = fprintf(pEnableFile, "0");
+
+    if(enable <= 0){
+        perror("Error writing to enable file");
+        exit(EXIT_FAILURE);
+    }
+
+    fclose(pEnableFile);
  
 }
