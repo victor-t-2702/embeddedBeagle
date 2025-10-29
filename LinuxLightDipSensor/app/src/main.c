@@ -11,7 +11,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
-#include "/home/victor/embeddedBeagle/work/LinuxLightDipSensor/hal/include/hal/accessRot.h"
+//#include "/home/victor/embeddedBeagle/work/LinuxLightDipSensor/hal/include/hal/accessRot.h"
 
 bool polling_on = false;
 pthread_t pollThread;
