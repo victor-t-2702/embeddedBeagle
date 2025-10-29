@@ -53,10 +53,16 @@ void sampling_init(void)
     is_initialized = true;
     sampling = true;
     samples.totalSamples = 0;
+
+    for(int i = 0; i < 1000; i++){
+        samples.currentData[i] = 0;
+        samples.historyData[i] = 0;
+    }
     samples.current = samples.currentData;
     samples.history = samples.historyData;
     samples.currentDataSize = 0;
     samples.historyDataSize = 0;
+
     
     int thread_result = pthread_create(&sampling_thread, NULL, sample, NULL);
 
@@ -71,12 +77,13 @@ void sampling_init(void)
 void currentDataToHistory(void)
 {
     pthread_mutex_lock(&data_mutex);
-    double *temp = samples.current;
-    samples.current = samples.history;
-    samples.history = temp;
-    for(int i = 0; i < samples.currentDataSize; i++)
-    {
-        samples.current[i] = 0;
+    for (int i = 0; i < samples.currentDataSize; i++) {
+        samples.history[i] = samples.current[i];
+    }
+
+    // Zero out current
+    for (int i = 0; i < 1000; i++) {
+        samples.current[i] = 0.0;
     }
     samples.historyDataSize = samples.currentDataSize;
     samples.currentDataSize = 0;
@@ -94,7 +101,7 @@ void* sample(void* arg)
         while(true){
             long long current_time = getTimeInMs();
             long long elapsed_time = current_time - start_time;
-            if(elapsed_time < 1000){
+            if((elapsed_time < 980)){
                 samples.currentData[samples.currentDataSize] = read_ch(0, 500);
                 if(samples.totalSamples == 0){
                     samples.sampleAverage = samples.currentData[samples.currentDataSize];
@@ -104,13 +111,15 @@ void* sample(void* arg)
                 }
                 samples.currentDataSize++;
                 samples.totalSamples++;
+                usleep(1000);
             }
-            if(elapsed_time >= 1000){
+            if(elapsed_time >= 980){
                 break;
             }   
         }    
-        usleep(1000);
         currentDataToHistory();
+        usleep(1000);
+
 
     }
 
@@ -122,9 +131,16 @@ double* getSamplerHistory(int* size)
 {
     assert(is_initialized);
     pthread_mutex_lock(&data_mutex);
+        if (samples.historyDataSize <= 0) {
+        pthread_mutex_unlock(&data_mutex);
+        *size = 0;
+        return NULL;
+    }
+
     double* output = malloc(samples.historyDataSize * sizeof(double));
     if (output == NULL) {
         pthread_mutex_unlock(&data_mutex);
+        free(output);
         perror("Error allocating output buffer");
         exit(EXIT_FAILURE);
     }

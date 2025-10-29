@@ -15,7 +15,6 @@
 //#include "/home/victor/embeddedBeagle/work/LinuxLightDipSensor/hal/include/hal/accessRot.h"
 
 static bool is_initialized = false;
-static bool polling = false;
 
 int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB)
 {
@@ -59,7 +58,7 @@ int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigne
     }
 
     rot->lastA = vals[0];
-    //printf("Rotary encoder initialized on offsets %u, %u.\n", pinA, pinB);
+    printf("Rotary encoder initialized on offsets %u, %u.\n", pinA, pinB);
     is_initialized = true;
     return 0;
 }
@@ -82,9 +81,12 @@ int rotary_poll(rotary_t *rot)
             rot->pulses++;  // Clockwise
         else
             rot->pulses--;  // Counter-clockwise
-
-        //printf("A=%d B=%d pulses=%d\n", A, B, rot->pulses);
+        if (rot->pulses < 0) {
+            rot->pulses = 0;
+        }
+        printf("A=%d B=%d pulses=%d\n", A, B, rot->pulses);
     }
+
 
     rot->lastA = A;
     return rot->pulses;
@@ -92,7 +94,7 @@ int rotary_poll(rotary_t *rot)
 
 void rotary_close(rotary_t *rot)
 {
-    assert(is_initialized)
+    assert(is_initialized);
     if (rot->request)
         gpiod_line_request_release(rot->request);
     if (rot->chip)
