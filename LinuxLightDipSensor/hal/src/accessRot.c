@@ -77,7 +77,7 @@ int rotary_poll(rotary_t *rot)
     int A = vals[0];
     int B = vals[1];
 
-    if (A != rot->lastA) {
+    if (A == 1 && rot->lastA == 0) {
         if (B != A)
             rot->pulses++;  // Clockwise
         else
