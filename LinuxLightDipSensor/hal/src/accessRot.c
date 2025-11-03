@@ -11,10 +11,15 @@
 #include <time.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "hal/accessRot.h"
+#include "hal/PWM.h"
 //#include "/home/victor/embeddedBeagle/work/LinuxLightDipSensor/hal/include/hal/accessRot.h"
 
 static bool is_initialized = false;
+static bool polling_on = false;
+pthread_t pollThread;
+
 
 int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB)
 {
@@ -63,7 +68,7 @@ int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigne
     return 0;
 }
 
-int rotary_poll(rotary_t *rot)
+static int rotary_poll(rotary_t *rot)
 {
     assert(is_initialized);
     enum gpiod_line_value vals[ROT_LINES];
@@ -100,4 +105,77 @@ void rotary_close(rotary_t *rot)
     if (rot->chip)
         gpiod_chip_close(rot->chip);
     is_initialized = false;
+}
+
+// Thread function that initializes Rotary Encoder and sets PWM duty cycle off polling encoder
+static void* pollForPWM(void *arg) {
+    PWM_init();
+    set_period(100000000); // start off at 10Hz
+    set_duty_cycle(0);
+    set_duty_cycle(1000000000);
+    rotary_t rot;
+    rot.pulses = 10; // starts off at 10Hz
+    int previousPulses = 0; // to check if encoder was actually turned
+    int pwmPeriod = (int)(1000000000.0 / rot.pulses); // convert between frequency and period
+    long seconds = 0;
+    long nanoseconds = 1000000; 
+    struct timespec reqDelay = {seconds, nanoseconds}; // Define a delay of 1ms
+    if (rotary_init(&rot, "/dev/gpiochip1", 41, 33) < 0) {
+        return NULL;
+    }
+    rot.pulses = 10; // starts off at 10Hz
+    while (polling_on) {
+        rotary_poll(&rot);
+
+        // If no change, sleep and continue
+        if (rot.pulses == previousPulses) {
+            nanosleep(&reqDelay, NULL);
+            continue;
+        }
+
+        // Clamp frequency range
+        if (rot.pulses > 500) {
+            rot.pulses = 500;
+        }
+
+        if (rot.pulses <= 0) {
+            // Zero frequency - turn off LED
+            rot.pulses = 0;
+            set_duty_cycle(0);
+            // Do NOT set_period here; leave previous frequency
+        } else {
+            // Compute new period
+            pwmPeriod = (int)(1000000000.0 / rot.pulses);
+
+            // 50% duty cycle based on the new period
+            set_duty_cycle(pwmPeriod / 2);
+
+            // Apply period
+            set_period(pwmPeriod);
+        }
+
+        // Track the new state
+        previousPulses = rot.pulses;
+
+        // Sleep to avoid CPU hogging
+        nanosleep(&reqDelay, NULL);
+}
+
+
+    rotary_close(&rot);
+    return arg;
+}
+
+void startPolling() { // Start polling thread
+    assert(!polling_on);
+    polling_on = true;
+    if (pthread_create(&pollThread, NULL, pollForPWM, NULL) != 0) {
+        perror("Failed to create polling thread");
+        return;
+    }
+}
+
+void endPolling() { // End polling thread
+    assert(polling_on);
+    polling_on = false;
 }

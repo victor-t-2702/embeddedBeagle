@@ -15,6 +15,9 @@
 
 static bool is_initialized = false; // bool to easily check if joystick is initialized
 static int fd;
+
+bool spi_is_ready(void) { return is_initialized; }
+
 // Initialize SPI device and return file descriptor
 int spi_init(const char* dev, uint32_t speed_hz) {
     assert(!is_initialized); // check if SPI device is already initialized

@@ -10,8 +10,9 @@ typedef struct{
     int size;
 } historyValues;
 
-void lightDips_init(int pipeReadfd);
-void* analyzeDips(void* arg);
-void lightDips_cleanup(void);
+void startLightDipsDetect();
+void endLightDipsDetect();
+int getDips();
+
 
 #endif

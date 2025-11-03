@@ -17,11 +17,15 @@ typedef struct {
     int pulses;
 } rotary_t;
 
+// Start polling thread
+void startPolling(); 
+
+// End polling thread
+void endPolling(); 
+
 // Initialize rotary encoder
 int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB);
 
-// Polls the rotary encoder
-int rotary_poll(rotary_t *rot);
 
 // Clean up
 void rotary_close(rotary_t *rot);

@@ -98,6 +98,9 @@ void currentDataToHistory(void)
 void* sample(void* arg)
 {
     assert(is_initialized);
+    while (!spi_is_ready()) {          // wait for SPI HAL
+        usleep(1000);                  // 1 ms
+    }
     //Outer loop is the whole program: 1 sec read, then transfer then 1 sec read...
     while(sampling){
         long long start_time = getTimeInMs();
@@ -110,7 +113,7 @@ void* sample(void* arg)
             //Right now it does not read for a full 1 sec, more like 980ms, continously reads from ADC using SPI
             //TODO, convert the read values into voltages
             if((elapsed_time < 980)){
-                samples.currentData[samples.currentDataSize] = read_ch(0, 500);
+                samples.currentData[samples.currentDataSize] = (double)((read_ch(0, 500))/4095.0)*3.3; // convert to voltages from SPI output
 
                 //Also calculate the weighted average everytime a sample is taken
                 if(samples.totalSamples == 0){
@@ -182,7 +185,7 @@ double getSampleAverage(void)
 {
     assert(is_initialized);
     pthread_mutex_lock(&data_mutex);
-    long long average = samples.sampleAverage;
+    double average = samples.sampleAverage;
     pthread_mutex_unlock(&data_mutex);
     return average;
 }
