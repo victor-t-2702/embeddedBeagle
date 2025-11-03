@@ -5,7 +5,8 @@
 #   Use header as: #include "hal/button.h"
 
 include_directories(hal/include)
-file(GLOB MY_SOURCES "src/*.c")
+#file(GLOB MY_SOURCES "src/*.c")
+file(GLOB MY_SOURCES "src/*.c" "src/lightDips.c")
 
 add_library(hal STATIC ${MY_SOURCES})
 

@@ -10,6 +10,7 @@
 #include "hal/PWM.h"
 #include "hal/sampling.h"
 #include "hal/accessSPI.h"
+#include "hal/lightDips.h"
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
@@ -17,6 +18,13 @@
 
 bool polling_on = false;
 pthread_t pollThread;
+
+bool writing = false;
+pthread_t writeToLightDipThread;
+
+
+int lightDipsPipe[2];
+
 
 // Thread function that initializes PWM and Rotary Encoder, and then sets PWM duty cycle off polling encoder
 void* pollForPWM(void *arg) {
@@ -68,6 +76,36 @@ void* pollForPWM(void *arg) {
     return arg;
 }
 
+void* writeToLightDips(void* arg){
+    lightDips_init(lightDipsPipe[0]);
+
+    // if(pipe(lightDipsPipe) == -1){
+    //     perror("Failed to initiliaze light dips analysis pipe");
+    //     exit(EXIT_FAILURE);
+    // }
+    
+    while(writing){
+        sleep(1);
+        historyValues history;
+
+        history.samples = getSamplerHistory(&history.size);  
+        history.average = getSampleAverage();
+
+        printf("=== WRITER ===\n");
+        printf("New array allocated at: %p\n", (void*)history.samples);
+        printf("Size: %d, Average: %f\n", history.size, history.average);
+
+        if (write(lightDipsPipe[1], &history, sizeof(historyValues)) != sizeof(historyValues)) {
+            perror("Write to light dip pipe failed");
+        }
+        // write(lightDipsPipe[1], &history.size, sizeof(int));
+        // write(lightDipsPipe[1], &history.average, sizeof(float));
+        // write(lightDipsPipe[1], history.samples, history.size * sizeof(float));
+    }
+
+    return arg;
+}
+
 int main() {
     
      //start Rotary Encoder polling thread
@@ -84,20 +122,27 @@ int main() {
 
     sampling_init();
 
-    sleep(1);
+    //start writing to light dips analysis thread
+     writing = true;
+     if (pthread_create(&writeToLightDipThread, NULL, writeToLightDips, NULL) != 0) {
+         perror("Failed to create write to light dips thread");
+         return 1;
+     }
 
-    // Clean up modules
+
+    sleep(5);
+
 
     int total = getTotalSample();
-    printf("%d totla here\n", total);
-    int size = 0;  // ✅ Create an actual integer
-    double* data = getSamplerHistory(&size);  // ✅ Pass address of the integer
+    printf("%d total samples here\n", total);
+    int size = 0; 
+    double* data = getSamplerHistory(&size);  
 
     if (data != NULL && size > 0) {
-        for(int i = 0; i < size && i < 20; i++) {  // ✅ Use actual size, with bounds check
+        for(int i = 0; i < size && i < 20; i++) {  
         printf("%f\n", data[i]);
         }
-        free(data);  // ✅ Don't forget to free!
+        free(data); 
     } else {
         printf("No data available\n");
     }
@@ -108,9 +153,15 @@ int main() {
 
     printf("This is the average %f\n", average);
 
-    sampling_cleanup();
-    spi_close();
+
+
     polling_on = false;
+    writing = false;
+
+    lightDips_cleanup();
+    close(lightDipsPipe[1]);
+    spi_close();
+    sampling_cleanup();
     return 0;
 
 
