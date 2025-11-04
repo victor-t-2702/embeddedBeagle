@@ -6,8 +6,9 @@
 
 #define UDP_PORT 12345
 
-void* udp_listener(void* arg); // Thread function to listen to UDP
-void udp_start(void); // Create thread
-void udp_stop(void); // Close and clean up thread
+extern volatile bool programActive; // to end program execution through UDP
+
+void udp_start(void); // Create UDP thread
+void udp_stop(void); // Close and clean up UDP thread
 
 #endif
