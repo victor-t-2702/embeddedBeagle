@@ -33,8 +33,13 @@ static void* terminalAgent(void* arg) {
         if (increment <= 0) {
             increment = 1;
         }
+        int max = 0;
         for (int i = 0; i < numSamples; i += increment) {
+            if (max >= 10) {
+                break;
+            }
             printf("%3d:%5.3f    ", i, sampleHistory[i]);
+            max++;
         }
         printf("\n");
         free(sampleHistory);
