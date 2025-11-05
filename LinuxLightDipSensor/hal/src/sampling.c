@@ -13,7 +13,7 @@
 static bool is_initialized = false;
 static bool sampling = false;
 
-//The struct taht holds all the sample variables, currentData accumulates for 1 sec before getting moved to historyData
+//The struct that holds all the sample variables, currentData accumulates for 1 sec before getting moved to historyData
 static struct samples_struct
 {
     double currentData[1000];
@@ -109,13 +109,13 @@ void* sample(void* arg)
         //The inner loop is the 1s part
         while(true){
 
-            Period_markEvent(PERIOD_EVENT_SAMPLE_LIGHT);
             long long current_time = getTimeInMs();
             long long elapsed_time = current_time - start_time;
 
             //Right now it does not read for a full 1 sec, more like 980ms, continously reads from ADC using SPI
             //TODO, convert the read values into voltages
-            if((elapsed_time < 980)){
+            if((elapsed_time < 1000)){
+                Period_markEvent(PERIOD_EVENT_SAMPLE_LIGHT);
                 samples.currentData[samples.currentDataSize] = (double)((read_ch(0, 500))/4095.0)*3.3; // convert to voltages from SPI output
 
                 //Also calculate the weighted average everytime a sample is taken
@@ -129,7 +129,7 @@ void* sample(void* arg)
                 samples.totalSamples++;
                 usleep(1000);
             }
-            if(elapsed_time >= 980){
+            if(elapsed_time >= 1000){
                 break;
             }   
         }    
