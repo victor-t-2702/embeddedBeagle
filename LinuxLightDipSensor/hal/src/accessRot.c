@@ -107,13 +107,14 @@ void rotary_close(rotary_t *rot)
     is_initialized = false;
 }
 
+static rotary_t rot;
+
 // Thread function that initializes Rotary Encoder and sets PWM duty cycle off polling encoder
 static void* pollForPWM(void *arg) {
     PWM_init();
     set_period(100000000); // start off at 10Hz
     set_duty_cycle(0);
     set_duty_cycle(1000000000);
-    rotary_t rot;
     rot.pulses = 10; // starts off at 10Hz
     int previousPulses = 0; // to check if encoder was actually turned
     int pwmPeriod = (int)(1000000000.0 / rot.pulses); // convert between frequency and period
@@ -178,4 +179,10 @@ void startPolling() { // Start polling thread
 void endPolling() { // End polling thread
     assert(polling_on);
     polling_on = false;
+}
+
+int freqExpose() {
+    assert(polling_on);
+    int freq = rot.pulses;
+    return freq;
 }

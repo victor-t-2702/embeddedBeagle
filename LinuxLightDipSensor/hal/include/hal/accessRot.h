@@ -26,6 +26,8 @@ void endPolling();
 // Initialize rotary encoder
 int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB);
 
+// Expose PWM frequency
+int freqExpose();
 
 // Clean up
 void rotary_close(rotary_t *rot);
