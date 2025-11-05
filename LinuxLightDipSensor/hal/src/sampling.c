@@ -1,6 +1,7 @@
 
 #include "hal/sampling.h"
 #include "hal/accessSPI.h"
+#include "hal/periodTimer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -107,6 +108,8 @@ void* sample(void* arg)
 
         //The inner loop is the 1s part
         while(true){
+
+            Period_markEvent(PERIOD_EVENT_SAMPLE_LIGHT);
             long long current_time = getTimeInMs();
             long long elapsed_time = current_time - start_time;
 

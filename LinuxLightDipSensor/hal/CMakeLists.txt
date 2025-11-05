@@ -7,6 +7,7 @@
 include_directories(hal/include)
 #file(GLOB MY_SOURCES "src/*.c")
 file(GLOB MY_SOURCES "src/*.c" "src/lightDips.c")
+file(GLOB MY_SOURCES "src/*.c" "src/periodTimer.c")
 
 add_library(hal STATIC ${MY_SOURCES})
 

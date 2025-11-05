@@ -12,6 +12,7 @@
 #include "hal/accessSPI.h"
 #include "hal/lightDips.h"
 #include "hal/udp.h"
+#include "hal/periodTimer.h"
 #include <unistd.h>
 #include <time.h>
 //#include "/home/victor/embeddedBeagle/work/LinuxLightDipSensor/hal/include/hal/accessRot.h"
@@ -20,7 +21,7 @@
 
 int main() {
  
-
+    Period_init();
     if (spi_init("/dev/spidev0.0", 500) != 0) {
         fprintf(stderr, "SPI initialization failed\n");
         return 1;
@@ -43,6 +44,7 @@ int main() {
     sampling_cleanup();
     spi_close();
     udp_stop();
+    Period_cleanup();
     
     return 0;
 
