@@ -13,6 +13,7 @@
 #include "hal/lightDips.h"
 #include "hal/udp.h"
 #include "hal/periodTimer.h"
+#include "hal/terminal.h"
 #include <unistd.h>
 #include <time.h>
 //#include "/home/victor/embeddedBeagle/work/LinuxLightDipSensor/hal/include/hal/accessRot.h"
@@ -35,10 +36,13 @@ int main() {
 
     udp_start();
 
+    terminal_start(); 
+
     while(programActive) { // flag set by UDP thread to end program execution when user sends "stop" command
 
     }
     
+    terminal_stop();
     endPolling();
     endLightDipsDetect();
     sampling_cleanup();
