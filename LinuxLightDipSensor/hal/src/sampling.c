@@ -1,4 +1,8 @@
-
+//Implementation of sampling.h
+//Every second, the accumulated samples will be put into a buffer 
+//Use getSamplerHistory to get both the samples in the history buffer and the amount of samples in the buffer
+//Use getSampleAverage to get the weighted average of all samples
+//Use getTotalSample to get the total amount of samples taked since intiailziation
 #include "hal/sampling.h"
 #include "hal/accessSPI.h"
 #include "hal/periodTimer.h"
@@ -11,6 +15,8 @@
 
 // Allow module to ensure it has been initialized (once!)
 static bool is_initialized = false;
+
+//Bool that controls the main sampling loop, ie the function ran by the thread
 static bool sampling = false;
 
 //The struct that holds all the sample variables, currentData accumulates for 1 sec before getting moved to historyData
@@ -22,9 +28,11 @@ static struct samples_struct
     double *current;
     double *history;
 
+    //Sizes of the buffer
     int currentDataSize;
     int historyDataSize;
 
+    //Total samples and samples average
     long long totalSamples;
     double sampleAverage;
 
@@ -53,10 +61,12 @@ void* sample(void*);
 //Intializes the sampling thread, sets all the variables to zero 
 void sampling_init(void) 
 {
-    //printf("Sampling - Initializing\n");
+    //Set all the flags to allow functions to run
     assert(!is_initialized);
     is_initialized = true;
     sampling = true;
+
+    //Clear variables
     samples.totalSamples = 0;
 
     for(int i = 0; i < 1000; i++){
@@ -222,7 +232,7 @@ long long getTotalSample(void)
 }
 
 
-//Breaks the while loop and closes the thread
+//Breaks the sampling function ran by the thread and and closes the thread
 void sampling_cleanup(void)
 {
     assert(is_initialized);

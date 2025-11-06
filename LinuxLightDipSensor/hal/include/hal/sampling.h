@@ -1,9 +1,11 @@
+//This module is used to create a sampling thread that constantly reads value from an SPI input
+//Every second, the accumulated samples will be put into a buffer 
+//Use getSamplerHistory to get both the samples in the history buffer and the amount of samples in the buffer
+//Use getSampleAverage to get the weighted average of all samples
+//Use getTotalSample to get the total amount of samples taked since intiailziation
+
 #ifndef _SAMPLING_H_
 #define _SAMPLING_H_
-
-//This module is used to create a sampling thread that constantly reads value from an SPI input
-//Every second, the accumulated samples will be put into a buffer that can be read by getSamplerHistory()
-//Other information on the samples collected can be retrieved using various functions
 
 #include <stdbool.h>
 

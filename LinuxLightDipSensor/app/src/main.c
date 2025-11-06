@@ -30,9 +30,9 @@ int main() {
 
     startPolling(); // Start rotary encoder polling thread
 
-    sampling_init();
+    sampling_init(); // Start sampling thread
 
-    startLightDipsDetect();
+    startLightDipsDetect(); //Start light dips detection thread
 
     udp_start();
 
@@ -51,29 +51,6 @@ int main() {
     Period_cleanup();
     
     return 0;
-
-    // int total = getTotalSample();
-    // printf("%d total samples here\n", total);
-    // int size = 0; 
-    // double* data = getSamplerHistory(&size);  
-
-    // if (data != NULL && size > 0) {
-    //     for(int i = 0; i < size && i < 20; i++) {  
-    //     printf("%f\n", data[i]);
-    //     }
-    //     free(data); 
-    // } else {
-    //     printf("No data available\n");
-    // }
-
-    // printf("There are %d samples in the history buffer\n", size);
-
-    // double average = getSampleAverage();
-
-    // printf("This is the average %f\n", average);
-
-    // printf("There have been %d light dips in the past second\n", getDips());
-    
 
 }
 

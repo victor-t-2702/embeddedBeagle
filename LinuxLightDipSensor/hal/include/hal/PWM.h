@@ -1,7 +1,12 @@
+//This HAL module is used to control the flashing of an LED using PWM
+//1. Call PWM_init to intiailize the module so allow all other functions to be used
+//2. Call set_period to set the period of the PWM
+//3. Call set_duty_cycle to set the duty cycle of the PWM
+//4. Call PWM_cleanup to stop using the module and prevent further modifications to the PWM
 #ifndef _PWM_H_
 #define _PWM_H_
 
-/*This HAL module is used to control the flashing of an LED using PWM*/
+
 #include <stdbool.h>
 
 //Initializes the PWM to be used, needs to be called before any function is used in this module
