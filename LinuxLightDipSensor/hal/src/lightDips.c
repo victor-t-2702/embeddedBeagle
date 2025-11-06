@@ -1,3 +1,5 @@
+// lightdips.c has the implementation of the lightDips.h header file
+// Uses hysterisis and a photoresistor to detect dips in ambient light
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -8,12 +10,13 @@
 #include "hal/sampling.h"
 
 
-static pthread_t lightDips_thread;
-static pthread_mutex_t light_dips_mutex = PTHREAD_MUTEX_INITIALIZER;
-static bool detect = false;
-static int dipCounter = 0;
-static int local_dipCounter = 0;
+static pthread_t lightDips_thread; // sampling thread
+static pthread_mutex_t light_dips_mutex = PTHREAD_MUTEX_INITIALIZER; // mutex to protect global dipCounter variable
+static bool detect = false; // flag to ensure thread should be running
+static int dipCounter = 0; // global variable that keeps track of the dips in the previous second
+static int local_dipCounter = 0; // temp variable that keeps track of the dips in the previous second before they are copied over to dipCounter
 
+// Thread function that uses hysterisis to detect light dips of ambient light "recorded" by a photoresistor
 static void* lightDipsDetect(void *arg) {
     historyValues values;
     values.size = 0;
@@ -45,6 +48,7 @@ static void* lightDipsDetect(void *arg) {
     return arg;
 }
 
+// Exposes static dipCounter variable
 int getDips() {
     int temp = 0;
     pthread_mutex_lock(&light_dips_mutex);
@@ -53,6 +57,7 @@ int getDips() {
     return temp;
 }
 
+// Starts dip detecting thread
 void startLightDipsDetect() {
     assert(!detect);
     detect = true;
@@ -62,6 +67,7 @@ void startLightDipsDetect() {
     }
 }
 
+// Ends dip detecting thread
 void endLightDipsDetect() {
     assert(detect);
     detect = false;

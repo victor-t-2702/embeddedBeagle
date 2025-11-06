@@ -13,12 +13,13 @@
 #include "hal/accessSPI.h"
 
 
-static bool is_initialized = false; // bool to easily check if joystick is initialized
-static int fd;
+static bool is_initialized = false; // bool to easily check if SPI is initialized
+static int fd; // Global variable to keep track of SPI file descriptor
 
+// Function that exposes static bool is_initialized
 bool spi_is_ready(void) { return is_initialized; }
 
-// Initialize SPI device and return file descriptor
+// Initialize SPI device
 int spi_init(const char* dev, uint32_t speed_hz) {
     assert(!is_initialized); // check if SPI device is already initialized
     
@@ -35,7 +36,7 @@ int spi_init(const char* dev, uint32_t speed_hz) {
     }
 
     if (ioctl(fd, SPI_IOC_WR_MODE, &mode) == -1) {  // SPI_IOC_WR_MODE = tells the kernel: “set the SPI mode (clock polarity, phase, etc.)”, with &mode being a pointer to the desired SPI mode
-        perror("mode");  // If setting SPI mode fails (ie. ioctl() returns -1, throw an error)
+        perror("mode");  // If setting SPI mode fails
         return -1; 
     }
 
@@ -79,38 +80,9 @@ int read_ch(int ch, uint32_t speed_hz) {  // marked static because only function
     return ((rx[1] & 0x0F) << 8) | rx[2];  // full 12 bit result
 }
 
-
+// Close SPI file
 void spi_close(void) {
     assert(is_initialized);
     is_initialized = false;
     close(fd);
 }
-
-// JoyDir getJoyDir(int fd, uint32_t speed_hz) { // We always want to check both channels (i.e. x and y directions)
-//     assert(is_initialized); // check if joystick has been properly initialized
-    
-//     int joyVal_X = read_ch(0, speed_hz); // check channel 0 (X direction)
-//     //printf("X = %d", joyVal_X);
-//     int joyVal_Y = read_ch(1, speed_hz); // check channel 1 (Y direction)
-//     //printf("Y = %d", joyVal_Y);
-
-//     if (joyVal_Y <= 2600 && joyVal_Y >= 1500 && joyVal_X <= 2600 && joyVal_X >= 1500) {
-//         return CENTER;
-//     }
-//     else if (joyVal_Y > 2600) {
-//         return UP;
-//     }
-//     else if (joyVal_Y < 1500) {
-//         return DOWN;
-//     }
-//     else if (joyVal_X > 2600) {
-//         return RIGHT;
-//     }
-//     else if (joyVal_X < 1500) {
-//         return LEFT;
-//     }
-//     else {
-//         return UNDEFINED;
-//     }
-// }
-

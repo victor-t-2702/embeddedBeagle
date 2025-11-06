@@ -14,13 +14,12 @@
 #include <pthread.h>
 #include "hal/accessRot.h"
 #include "hal/PWM.h"
-//#include "/home/victor/embeddedBeagle/work/LinuxLightDipSensor/hal/include/hal/accessRot.h"
 
-static bool is_initialized = false;
-static bool polling_on = false;
-pthread_t pollThread;
+static bool is_initialized = false; // Flag to ensure module is initialized
+static bool polling_on = false; // Flag to ensure thread is supposed to be running
+pthread_t pollThread; // Polling thread
 
-
+// Initializes the rotary gpio chip and lines (2 lines)
 int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB)
 {
     assert(!is_initialized);
@@ -68,6 +67,7 @@ int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigne
     return 0;
 }
 
+// Polls the rotary encoder (using basic State Machine logic to ensure that one turn clockwise/counter-clockwise increase/decreases by 1)
 static int rotary_poll(rotary_t *rot)
 {
     assert(is_initialized);
@@ -89,7 +89,6 @@ static int rotary_poll(rotary_t *rot)
         if (rot->pulses < 0) {
             rot->pulses = 0;
         }
-        printf("A=%d B=%d pulses=%d\n", A, B, rot->pulses);
     }
 
 
@@ -97,6 +96,7 @@ static int rotary_poll(rotary_t *rot)
     return rot->pulses;
 }
 
+// Closes gpio chip and frees memory held by respective structs
 void rotary_close(rotary_t *rot)
 {
     assert(is_initialized);
@@ -107,6 +107,7 @@ void rotary_close(rotary_t *rot)
     is_initialized = false;
 }
 
+// Global rotary_t variable for use within thread function
 static rotary_t rot;
 
 // Thread function that initializes Rotary Encoder and sets PWM duty cycle off polling encoder
@@ -161,13 +162,12 @@ static void* pollForPWM(void *arg) {
         // Sleep to avoid CPU hogging
         nanosleep(&reqDelay, NULL);
 }
-
-
     rotary_close(&rot);
     return arg;
 }
 
-void startPolling() { // Start polling thread
+// Start polling thread
+void startPolling() {
     assert(!polling_on);
     polling_on = true;
     if (pthread_create(&pollThread, NULL, pollForPWM, NULL) != 0) {
@@ -176,11 +176,12 @@ void startPolling() { // Start polling thread
     }
 }
 
-void endPolling() { // End polling thread
+// End polling thread
+void endPolling() { 
     assert(polling_on);
     polling_on = false;
 }
-
+// Expose static member variable rot.pulses (to allow terminal to display frequency of LED's PWM flashing) 
 int freqExpose() {
     assert(polling_on);
     int freq = rot.pulses;

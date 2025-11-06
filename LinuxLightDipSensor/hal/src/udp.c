@@ -1,3 +1,5 @@
+// udp.c has the implementations of the functions defined in udp.h.
+// These functions interact via UDP to incorporate communication between the host and the target.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,14 +10,14 @@
 #include "hal/udp.h"
 #include "hal/lightDips.h"
 #include "hal/sampling.h"
-//#include "/home/victor/embeddedBeagle/work/LinuxLightDipSensor/hal/include/hal/udp.h"
 
 
-volatile bool programActive = true;
-static bool running = false;
-static pthread_t udp_thread;
+volatile bool programActive = true; // flag that is used to end program through UDP
+static bool running = false; // flag to ensure thread should be running
+static pthread_t udp_thread; // UDP thread
 static int sockfd = -1; // network socket file descriptor (socket() returns it)
 
+// Thread function that listens and responds to port 12345 through UDP 
 static void* udp_listener(void* arg) {
     struct sockaddr_in server_addr, client_addr; // server_addr = where we'll listen, client_addr = where incoming packets come from
     char buffer[64]; // memory to store incoming commands
@@ -135,17 +137,18 @@ static void* udp_listener(void* arg) {
     return arg;
 }
 
+// Start UDP thread
 void udp_start(void) {
     assert(!running);
     running = true;
     pthread_create(&udp_thread, NULL, udp_listener, NULL);
 }
 
+// End UDP thread
 void udp_stop(void) {
     assert(running);
     running = false;
     if (sockfd > 0) {
         close(sockfd);
     }
-    //pthread_join(udp_thread, NULL);
 }

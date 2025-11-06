@@ -7,8 +7,10 @@
 #include <gpiod.h>
 #include <stdbool.h>
 
+// Rotary encoder needs 2 GPIO lines
 #define ROT_LINES 2
 
+// Struct that holds all necessary info about the currently initialized rotary encoder
 typedef struct {
     struct gpiod_chip *chip;
     struct gpiod_line_request *request;
