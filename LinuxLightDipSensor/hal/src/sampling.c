@@ -31,9 +31,11 @@ static struct samples_struct
 } samples;
 
 
+//The sampling thread and the mutex objects
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t sampling_thread;
 
+//A function to get current time in ms, allowing for a timer to be used to measure 1s
 static long long getTimeInMs(void)
 {
     struct timespec spec;
@@ -44,7 +46,8 @@ static long long getTimeInMs(void)
     return milliSeconds;
 }
 
-void currentDataToHistory(void);
+//Function prototypes
+static void currentDataToHistory(void);
 void* sample(void*);
 
 //Intializes the sampling thread, sets all the variables to zero 
@@ -65,10 +68,10 @@ void sampling_init(void)
     samples.currentDataSize = 0;
     samples.historyDataSize = 0;
 
-    
+    //Create the thread
     int thread_result = pthread_create(&sampling_thread, NULL, sample, NULL);
 
-    
+    //Check if a thread is created
     if (thread_result != 0) {
         perror("Error when creating thread");
         exit(EXIT_FAILURE);
@@ -76,8 +79,8 @@ void sampling_init(void)
 
 }
 
-//The function that moves the current data into the history buffer
-void currentDataToHistory(void)
+//The function that moves the current data into the history buffer, an internal method
+static void currentDataToHistory(void)
 {
     //Lock before changing values
     pthread_mutex_lock(&data_mutex);
@@ -91,6 +94,8 @@ void currentDataToHistory(void)
     }
     samples.historyDataSize = samples.currentDataSize;
     samples.currentDataSize = 0;
+
+    //Unlock
     pthread_mutex_unlock(&data_mutex);
 
 }
@@ -102,33 +107,43 @@ void* sample(void* arg)
     while (!spi_is_ready()) {          // wait for SPI HAL
         usleep(1000);                  // 1 ms
     }
-    //Outer loop is the whole program: 1 sec read, then transfer then 1 sec read...
+    //Outer loop is the whole program: 1 sec read, then transfer then 1 sec read then transfer ...
     while(sampling){
+
+        //Start a timer for 1 second
         long long start_time = getTimeInMs();
 
-        //The inner loop is the 1s part
+        //The inner loop is the part that runs every seoncd
         while(true){
 
+            //Get the elapsed time to check if a second has passed
             long long current_time = getTimeInMs();
             long long elapsed_time = current_time - start_time;
 
-            //Right now it does not read for a full 1 sec, more like 980ms, continously reads from ADC using SPI
-            //TODO, convert the read values into voltages
+            //Read from the spi and convert values to voltages, putting them in the currentData buffer
+            //This occurs until 1s has elapsed
             if((elapsed_time < 1000)){
-                Period_markEvent(PERIOD_EVENT_SAMPLE_LIGHT);
                 samples.currentData[samples.currentDataSize] = (double)((read_ch(0, 500))/4095.0)*3.3; // convert to voltages from SPI output
 
-                //Also calculate the weighted average everytime a sample is taken
+                //Also calculate the weighted average everytime a sample is taken, first one is base case for 1st sample
                 if(samples.totalSamples == 0){
                     samples.sampleAverage = samples.currentData[samples.currentDataSize];
                 }
+                //Calculate the weighted average
                 else{
                     samples.sampleAverage = samples.sampleAverage*0.999 + samples.currentData[samples.currentDataSize]*0.001;
                 }
+
+                //Increment the currentData buffer size and the number of total samples
+                Period_markEvent(PERIOD_EVENT_SAMPLE_LIGHT);
                 samples.currentDataSize++;
                 samples.totalSamples++;
+
+                //Sleep for 1ms to prevent calling read_ch too fast
                 usleep(1000);
             }
+
+            //After 1 second has passed, break the while true loop
             if(elapsed_time >= 1000){
                 break;
             }   
@@ -146,8 +161,8 @@ void* sample(void* arg)
 
 
 //IMPORTANT
-//This gets the values from the history buffer, pass in size, size gets modified directly in the function to be the hsitory size
-//Returns a pointer to a double array, this double array is created inside the function
+//This gets the values from the history buffer, pass in size, size gets modified directly in the function to be the history size
+//Returns a pointer to a double array, this double array is created inside the function, needs to be freed by caller!
 //So this function returns a pointer to a newly made double array with the contents of history and modifies the int that comes in 
 //to be the size of the history array, basically providing two values
 double* getSamplerHistory(int* size)
@@ -178,6 +193,8 @@ double* getSamplerHistory(int* size)
     for(int i = 0; i < samples.historyDataSize; i++){
         output[i] = samples.history[i];
     }
+
+    //Unlock
     pthread_mutex_unlock(&data_mutex);
 
     return output;
