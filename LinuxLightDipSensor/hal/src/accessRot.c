@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <pthread.h>
+
 #include "hal/accessRot.h"
 #include "hal/PWM.h"
 
@@ -67,6 +68,16 @@ int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigne
     return 0;
 }
 
+static long long getTimeInMs(void)
+{
+    struct timespec spec;
+    clock_gettime(CLOCK_REALTIME, &spec);
+    long long seconds = spec.tv_sec;
+    long long nanoSeconds = spec.tv_nsec;
+    long long milliSeconds = seconds * 1000 + nanoSeconds / 1000000;
+    return milliSeconds;
+}
+
 // Polls the rotary encoder (using basic State Machine logic to ensure that one turn clockwise/counter-clockwise increase/decreases by 1)
 static int rotary_poll(rotary_t *rot)
 {
@@ -118,10 +129,13 @@ static void* pollForPWM(void *arg) {
     set_duty_cycle(1000000000);
     rot.pulses = 10; // starts off at 10Hz
     int previousPulses = 0; // to check if encoder was actually turned
-    int pwmPeriod = (int)(1000000000.0 / rot.pulses); // convert between frequency and period
+    int pwmPeriod = 0; // convert between frequency and period
     long seconds = 0;
     long nanoseconds = 1000000; 
     struct timespec reqDelay = {seconds, nanoseconds}; // Define a delay of 1ms
+    long long currentTime = 0;
+    long long elapsedTime = 0;
+    long long startTime = 0;
     if (rotary_init(&rot, "/dev/gpiochip1", 41, 33) < 0) {
         return NULL;
     }
@@ -129,8 +143,66 @@ static void* pollForPWM(void *arg) {
     while (polling_on) {
         rotary_poll(&rot);
 
+        if(rot.pulses == 1){
+            // Hardware PWM can’t go this slow → manual toggle mode
+            
+            set_period(100000000);
+            set_duty_cycle(100000000); // LED ON
+
+            elapsedTime = 0;
+            startTime = getTimeInMs(); // alternative for sleep() that also does polling
+            while(elapsedTime < 500) {
+                currentTime = getTimeInMs();
+                elapsedTime = currentTime - startTime;
+                rotary_poll(&rot);
+            }
+
+            set_duty_cycle(0);         // LED OFF
+            elapsedTime = 0;
+            startTime = getTimeInMs();
+            while(elapsedTime < 500) {
+                currentTime = getTimeInMs();
+                elapsedTime = currentTime - startTime;
+                rotary_poll(&rot);
+                if (rot.pulses == 1) {
+                    continue;
+                }
+            }
+            //previousPulses = rot.pulses;
+            //continue;
+        }
+        else if(rot.pulses == 2){
+            // 2 Hz manual toggle: 0.25 s ON, 0.25 s OFF
+            
+            set_period(100000000);
+            set_duty_cycle(99999999);// LED ON
+            elapsedTime = 0;
+            startTime = getTimeInMs(); // alternative for sleep() that also does polling
+            while(elapsedTime < 250) {
+                rotary_poll(&rot);
+                nanosleep(&(struct timespec){0, 1000000}, NULL);
+                currentTime = getTimeInMs();
+                elapsedTime = currentTime - startTime;
+            }
+
+            set_duty_cycle(0);         // LED OFF
+            elapsedTime = 0;
+            startTime = getTimeInMs();
+            while(elapsedTime < 250) {
+                rotary_poll(&rot);
+                nanosleep(&(struct timespec){0, 1000000}, NULL);
+                currentTime = getTimeInMs();
+                elapsedTime = currentTime - startTime;
+                if (rot.pulses == 2) {
+                    continue;
+                }
+            }
+            //previousPulses = rot.pulses;
+            //continue;
+        }
+
         // If no change, sleep and continue
-        if (rot.pulses == previousPulses) {
+        if (rot.pulses == previousPulses && previousPulses != 2) {
             nanosleep(&reqDelay, NULL);
             continue;
         }
@@ -138,6 +210,8 @@ static void* pollForPWM(void *arg) {
         // Clamp frequency range
         if (rot.pulses > 500) {
             rot.pulses = 500;
+            // Track the new state
+            previousPulses = rot.pulses;
         }
 
         if (rot.pulses <= 0) {
@@ -145,19 +219,20 @@ static void* pollForPWM(void *arg) {
             rot.pulses = 0;
             set_duty_cycle(0);
             // Do NOT set_period here; leave previous frequency
-        } else {
+            // Track the new state
+            previousPulses = rot.pulses;            
+        } 
+        else {
             // Compute new period
             pwmPeriod = (int)(1000000000.0 / rot.pulses);
 
+            set_period(pwmPeriod);
             // 50% duty cycle based on the new period
             set_duty_cycle(pwmPeriod / 2);
 
-            // Apply period
-            set_period(pwmPeriod);
+            // Track the new state
+            previousPulses = rot.pulses;
         }
-
-        // Track the new state
-        previousPulses = rot.pulses;
 
         // Sleep to avoid CPU hogging
         nanosleep(&reqDelay, NULL);

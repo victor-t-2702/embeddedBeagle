@@ -19,6 +19,7 @@ static pthread_t terminal_thread; // thread for terminal output
 
 // Thread function for terminal output using periodTimer.c and other HAL modules
 static void* terminalAgent(void* arg) {
+    sleep(1);
     int numSamples = 0;
     int dips = 0;
     double avg = 0.0;
