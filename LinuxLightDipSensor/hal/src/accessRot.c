@@ -20,9 +20,12 @@ static bool is_initialized = false; // Flag to ensure module is initialized
 static bool polling_on = false; // Flag to ensure thread is supposed to be running
 pthread_t pollThread; // Polling thread
 
+
+
 // Initializes the rotary gpio chip and lines (2 lines)
 int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB)
 {
+    
     assert(!is_initialized);
 
     struct gpiod_line_settings *settings = NULL;
@@ -71,7 +74,7 @@ int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigne
 static long long getTimeInMs(void)
 {
     struct timespec spec;
-    clock_gettime(CLOCK_REALTIME, &spec);
+    clock_gettime(CLOCK_MONOTONIC, &spec);
     long long seconds = spec.tv_sec;
     long long nanoSeconds = spec.tv_nsec;
     long long milliSeconds = seconds * 1000 + nanoSeconds / 1000000;
@@ -121,6 +124,8 @@ void rotary_close(rotary_t *rot)
 // Global rotary_t variable for use within thread function
 static rotary_t rot;
 
+
+
 // Thread function that initializes Rotary Encoder and sets PWM duty cycle off polling encoder
 static void* pollForPWM(void *arg) {
     PWM_init();
@@ -136,13 +141,15 @@ static void* pollForPWM(void *arg) {
     long long currentTime = 0;
     long long elapsedTime = 0;
     long long startTime = 0;
+
+
     if (rotary_init(&rot, "/dev/gpiochip1", 41, 33) < 0) {
         return NULL;
     }
     rot.pulses = 10; // starts off at 10Hz
+
     while (polling_on) {
         rotary_poll(&rot);
-
         if(rot.pulses == 1){
             // Hardware PWM can’t go this slow → manual toggle mode
             
@@ -201,8 +208,13 @@ static void* pollForPWM(void *arg) {
             //continue;
         }
 
-        // If no change, sleep and continue
+        //If no change, sleep and continue
         if (rot.pulses == previousPulses && previousPulses != 2) {
+            nanosleep(&reqDelay, NULL);
+            continue;
+        }
+
+        if (rot.pulses == previousPulses) {
             nanosleep(&reqDelay, NULL);
             continue;
         }
@@ -236,7 +248,7 @@ static void* pollForPWM(void *arg) {
 
         // Sleep to avoid CPU hogging
         nanosleep(&reqDelay, NULL);
-}
+    }
     rotary_close(&rot);
     return arg;
 }
@@ -249,12 +261,14 @@ void startPolling() {
         perror("Failed to create polling thread");
         return;
     }
+
 }
 
 // End polling thread
 void endPolling() { 
     assert(polling_on);
     polling_on = false;
+    PWM_cleanup();
 }
 // Expose static member variable rot.pulses (to allow terminal to display frequency of LED's PWM flashing) 
 int freqExpose() {
