@@ -25,13 +25,21 @@ static void* terminalAgent(void* arg) {
     double avg = 0.0;
     int PWM_freq = 0;
     Period_statistics_t pStats = {0};
+
     while(terminalRunning) {
+        //Get our sample history and sample size
         double *sampleHistory = getSamplerHistory(&numSamples);
+
+        //Get our average, number of dips, PWM frequency, and samplecount from periodTimer
         avg = getSampleAverage();
         dips = getDips();
         PWM_freq = freqExpose();
         Period_getStatisticsAndClear(PERIOD_EVENT_SAMPLE_LIGHT, &pStats);
+
+        //Print out our data in one line
         printf("#Smpl/s = %3d     Flash @ %3dHz     avg = %5.3fV     dips = %3d     Smpl ms[%5.3f, %5.3f] avg %5.3f/%3d\n", numSamples, PWM_freq, avg, dips, pStats.minPeriodInMs, pStats.maxPeriodInMs, pStats.avgPeriodInMs, pStats.numSamples);  // 7.2 and 8.9 ARE PLACEHOLDERS FOR TIMING JITTER STUFF
+        
+        //Print our 10 evenly spaced samples from the last second of samples
         int increment = (numSamples / 10);
         if (increment <= 0) {
             increment = 1;
@@ -45,6 +53,8 @@ static void* terminalAgent(void* arg) {
             max++;
         }
         printf("\n");
+
+        //Free the sample history when done
         free(sampleHistory);
         sleep(1);
     }
@@ -62,4 +72,5 @@ void terminal_start(void) {
 void terminal_stop(void) {
     assert(terminalRunning);
     terminalRunning = false;
+    pthread_join(terminal_thread, NULL);
 }

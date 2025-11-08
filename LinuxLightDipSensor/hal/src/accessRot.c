@@ -21,7 +21,6 @@ static bool polling_on = false; // Flag to ensure thread is supposed to be runni
 pthread_t pollThread; // Polling thread
 
 
-
 // Initializes the rotary gpio chip and lines (2 lines)
 int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB)
 {
@@ -66,11 +65,11 @@ int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigne
     }
 
     rot->lastA = vals[0];
-    printf("Rotary encoder initialized on offsets %u, %u.\n", pinA, pinB);
     is_initialized = true;
     return 0;
 }
 
+//Function to get the current time in ms, used to implement a timer in the pollForPWM for low frequencies
 static long long getTimeInMs(void)
 {
     struct timespec spec;
@@ -128,16 +127,20 @@ static rotary_t rot;
 
 // Thread function that initializes Rotary Encoder and sets PWM duty cycle off polling encoder
 static void* pollForPWM(void *arg) {
-    PWM_init();
+    PWM_init(); // Initialize the PWM HAL module
     set_period(100000000); // start off at 10Hz
     set_duty_cycle(0);
     set_duty_cycle(1000000000);
+
     rot.pulses = 10; // starts off at 10Hz
     int previousPulses = 0; // to check if encoder was actually turned
     int pwmPeriod = 0; // convert between frequency and period
+
     long seconds = 0;
     long nanoseconds = 1000000; 
     struct timespec reqDelay = {seconds, nanoseconds}; // Define a delay of 1ms
+
+    //These are variables used for the manual timing of low frequencies
     long long currentTime = 0;
     long long elapsedTime = 0;
     long long startTime = 0;
@@ -146,16 +149,15 @@ static void* pollForPWM(void *arg) {
     if (rotary_init(&rot, "/dev/gpiochip1", 41, 33) < 0) {
         return NULL;
     }
-    rot.pulses = 10; // starts off at 10Hz
-
+    rot.pulses = 10;
     while (polling_on) {
         rotary_poll(&rot);
+
         if(rot.pulses == 1){
             // Hardware PWM can’t go this slow → manual toggle mode
-            
+            // 1 Hz manual toggle: 0.5s ON, 0.5s OFF
             set_period(100000000);
             set_duty_cycle(100000000); // LED ON
-
             elapsedTime = 0;
             startTime = getTimeInMs(); // alternative for sleep() that also does polling
             while(elapsedTime < 500) {
@@ -175,8 +177,6 @@ static void* pollForPWM(void *arg) {
                     continue;
                 }
             }
-            //previousPulses = rot.pulses;
-            //continue;
         }
         else if(rot.pulses == 2){
             // 2 Hz manual toggle: 0.25 s ON, 0.25 s OFF
@@ -204,17 +204,10 @@ static void* pollForPWM(void *arg) {
                     continue;
                 }
             }
-            //previousPulses = rot.pulses;
-            //continue;
         }
 
-        //If no change, sleep and continue
+        //If no change for frequnecies >2 Hz, sleep and continue
         if (rot.pulses == previousPulses && previousPulses != 2) {
-            nanosleep(&reqDelay, NULL);
-            continue;
-        }
-
-        if (rot.pulses == previousPulses) {
             nanosleep(&reqDelay, NULL);
             continue;
         }
@@ -264,12 +257,14 @@ void startPolling() {
 
 }
 
-// End polling thread
+// End polling thread, cleanup PWM
 void endPolling() { 
     assert(polling_on);
     polling_on = false;
+    pthread_join(pollThread, NULL);
     PWM_cleanup();
 }
+
 // Expose static member variable rot.pulses (to allow terminal to display frequency of LED's PWM flashing) 
 int freqExpose() {
     assert(polling_on);

@@ -71,6 +71,7 @@ void startLightDipsDetect() {
 void endLightDipsDetect() {
     assert(detect);
     detect = false;
+    pthread_join(lightDips_thread, NULL);
 }
 
 

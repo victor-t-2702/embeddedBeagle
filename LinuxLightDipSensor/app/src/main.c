@@ -16,9 +16,6 @@
 #include "hal/terminal.h"
 #include <unistd.h>
 #include <time.h>
-//#include "/home/victor/embeddedBeagle/work/LinuxLightDipSensor/hal/include/hal/accessRot.h"
-//#include "/home/victor/embeddedBeagle/work/LinuxLightDipSensor/hal/include/hal/udp.h"
-
 
 int main() {
  
@@ -34,14 +31,15 @@ int main() {
 
     startLightDipsDetect(); //Start light dips detection thread
 
-    udp_start();
+    udp_start(); //Start udp thread
 
-    terminal_start(); 
+    terminal_start(); //Start terminal output thread
 
     while(programActive) { // flag set by UDP thread to end program execution when user sends "stop" command
 
     }
     
+    //Call the cleanup functions for all the HAL modules used
     terminal_stop();
     endPolling();
     endLightDipsDetect();

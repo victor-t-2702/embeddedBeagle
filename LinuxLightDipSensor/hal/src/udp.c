@@ -37,15 +37,26 @@ static void* udp_listener(void* arg) {
     if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) { // Give the socket FD the local address ADDR (which is LEN bytes long)
         perror("bind");
         close(sockfd);
+        sockfd = -1;
         pthread_exit(NULL);
     }
-
-    printf("[UDP] Listening on port %d...\n", UDP_PORT);
+    
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 100000; // 100 ms timeout
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+        perror("setsockopt(SO_RCVTIMEO)");
+    }
+    
     char previousCommand[30] = "";
     while (running) {
         ssize_t n = recvfrom(sockfd, buffer, sizeof(buffer) - 1, 0, // waits (blocking) for an incoming UDP packet
                              (struct sockaddr*)&client_addr, &len); // fills buffer with the message, client_addr with sender's address
-        if (n < 0) continue;
+        if (n < 0) {
+            // recvfrom() returns -1 if socket was closed
+            if (!running) break;  // exiting cleanly
+            continue;
+        }
 
         buffer[n] = '\0'; // null terminate to treat as C string
         printf("[UDP] Received: %s\n", buffer); // print received message
@@ -131,9 +142,7 @@ static void* udp_listener(void* arg) {
                    (struct sockaddr*)&client_addr, len);
         }
     }
-
-    close(sockfd);
-    pthread_exit(NULL);
+    sockfd = -1;
     return arg;
 }
 
@@ -150,5 +159,7 @@ void udp_stop(void) {
     running = false;
     if (sockfd > 0) {
         close(sockfd);
+        sockfd = -1;
     }
+    pthread_join(udp_thread, NULL);
 }
