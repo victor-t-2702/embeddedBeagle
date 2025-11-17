@@ -39,7 +39,7 @@ void closeAll(int fd) { // Function called before program is quit
 
 
 
-
+/*
 int main() {
     srand(time(NULL)); // Ensure a unique seed for rand()
     
@@ -177,3 +177,4 @@ int main() {
     
 
 }
+*/

@@ -14,260 +14,263 @@
 #include <pthread.h>
 
 #include "hal/accessRot.h"
-#include "hal/PWM.h"
 
-static bool is_initialized = false; // Flag to ensure module is initialized
-static bool polling_on = false; // Flag to ensure thread is supposed to be running
-pthread_t pollThread; // Polling thread
+// static bool is_initialized = false; // Flag to ensure module is initialized
+// static bool polling_on = false; // Flag to ensure thread is supposed to be running
+// pthread_t pollThread; // Polling thread
 
 
-// Initializes the rotary gpio chip and lines (2 lines)
-int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB)
-{
+// // Initializes the rotary gpio chip and lines (2 lines)
+// int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB)
+// {
     
-    assert(!is_initialized);
+//     assert(!is_initialized);
 
-    struct gpiod_line_settings *settings = NULL;
-    struct gpiod_line_config *config = NULL;
+//     struct gpiod_line_settings *settings = NULL;
+//     struct gpiod_line_config *config = NULL;
 
-    rot->offsets[0] = pinA;
-    rot->offsets[1] = pinB;
-    rot->pulses = 0;
+//     rot->offsets[0] = pinA;
+//     rot->offsets[1] = pinB;
+//     rot->pulses = 0;
 
-    rot->chip = gpiod_chip_open(chip_path);
-    if (!rot->chip) {
-        perror("gpiod_chip_open");
-        return -1;
-    }
+//     rot->chip = gpiod_chip_open(chip_path);
+//     if (!rot->chip) {
+//         perror("gpiod_chip_open");
+//         return -1;
+//     }
 
-    settings = gpiod_line_settings_new();
-    gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_INPUT);
+//     settings = gpiod_line_settings_new();
+//     gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_INPUT);
 
-    config = gpiod_line_config_new();
-    gpiod_line_config_add_line_settings(config, rot->offsets, ROT_LINES, settings);
+//     config = gpiod_line_config_new();
+//     gpiod_line_config_add_line_settings(config, rot->offsets, ROT_LINES, settings);
 
-    rot->request = gpiod_chip_request_lines(rot->chip, NULL, config);
-    if (!rot->request) {
-        perror("gpiod_chip_request_lines");
-        gpiod_line_settings_free(settings);
-        gpiod_line_config_free(config);
-        gpiod_chip_close(rot->chip);
-        return -2;
-    }
+//     rot->request = gpiod_chip_request_lines(rot->chip, NULL, config);
+//     if (!rot->request) {
+//         perror("gpiod_chip_request_lines");
+//         gpiod_line_settings_free(settings);
+//         gpiod_line_config_free(config);
+//         gpiod_chip_close(rot->chip);
+//         return -2;
+//     }
 
-    gpiod_line_settings_free(settings);
-    gpiod_line_config_free(config);
+//     gpiod_line_settings_free(settings);
+//     gpiod_line_config_free(config);
 
-    enum gpiod_line_value vals[ROT_LINES];
-    if (gpiod_line_request_get_values(rot->request, vals) < 0) {
-        perror("gpiod_line_request_get_values");
-        return -3;
-    }
+//     enum gpiod_line_value vals[ROT_LINES];
+//     if (gpiod_line_request_get_values(rot->request, vals) < 0) {
+//         perror("gpiod_line_request_get_values");
+//         return -3;
+//     }
 
-    rot->lastA = vals[0];
-    is_initialized = true;
-    return 0;
-}
+//     rot->lastA = vals[0];
+//     is_initialized = true;
+//     return 0;
+// }
 
-//Function to get the current time in ms, used to implement a timer in the pollForPWM for low frequencies
-static long long getTimeInMs(void)
-{
-    struct timespec spec;
-    clock_gettime(CLOCK_MONOTONIC, &spec);
-    long long seconds = spec.tv_sec;
-    long long nanoSeconds = spec.tv_nsec;
-    long long milliSeconds = seconds * 1000 + nanoSeconds / 1000000;
-    return milliSeconds;
-}
+// //Function to get the current time in ms, used to implement a timer in the pollForPWM for low frequencies
+// static long long getTimeInMs(void)
+// {
+//     struct timespec spec;
+//     clock_gettime(CLOCK_MONOTONIC, &spec);
+//     long long seconds = spec.tv_sec;
+//     long long nanoSeconds = spec.tv_nsec;
+//     long long milliSeconds = seconds * 1000 + nanoSeconds / 1000000;
+//     return milliSeconds;
+// }
 
-// Polls the rotary encoder (using basic State Machine logic to ensure that one turn clockwise/counter-clockwise increase/decreases by 1)
-static int rotary_poll(rotary_t *rot)
-{
-    assert(is_initialized);
-    enum gpiod_line_value vals[ROT_LINES];
-    if (gpiod_line_request_get_values(rot->request, vals) < 0) {
-        perror("gpiod_line_request_get_values");
-        return rot->pulses;
-    }
+// // Polls the rotary encoder (using basic State Machine logic to ensure that one turn clockwise/counter-clockwise increase/decreases by 1)
+// static int rotary_poll(rotary_t *rot)
+// {
+//     assert(is_initialized);
+//     enum gpiod_line_value vals[ROT_LINES];
+//     if (gpiod_line_request_get_values(rot->request, vals) < 0) {
+//         perror("gpiod_line_request_get_values");
+//         return rot->pulses;
+//     }
 
     
-    int A = vals[0];
-    int B = vals[1];
+//     int A = vals[0];
+//     int B = vals[1];
 
-    if (A == 1 && rot->lastA == 0) {
-        if (B != A)
-            rot->pulses++;  // Clockwise
-        else
-            rot->pulses--;  // Counter-clockwise
-        if (rot->pulses < 0) {
-            rot->pulses = 0;
-        }
-    }
-
-
-    rot->lastA = A;
-    return rot->pulses;
-}
-
-// Closes gpio chip and frees memory held by respective structs
-void rotary_close(rotary_t *rot)
-{
-    assert(is_initialized);
-    if (rot->request)
-        gpiod_line_request_release(rot->request);
-    if (rot->chip)
-        gpiod_chip_close(rot->chip);
-    is_initialized = false;
-}
-
-// Global rotary_t variable for use within thread function
-static rotary_t rot;
+//     if (A == 1 && rot->lastA == 0) {
+//         if (B != A)
+//             rot->pulses++;  // Clockwise
+//         else
+//             rot->pulses--;  // Counter-clockwise
+//         if (rot->pulses < 0) {
+//             rot->pulses = 0;
+//         }
+//     }
 
 
+//     rot->lastA = A;
+//     return rot->pulses;
+// }
 
-// Thread function that initializes Rotary Encoder and sets PWM duty cycle off polling encoder
-static void* pollForPWM(void *arg) {
-    PWM_init(); // Initialize the PWM HAL module
-    set_period(100000000); // start off at 10Hz
-    set_duty_cycle(0);
-    set_duty_cycle(1000000000);
+// // Closes gpio chip and frees memory held by respective structs
+// void rotary_close(rotary_t *rot)
+// {
+//     assert(is_initialized);
+//     if (rot->request)
+//         gpiod_line_request_release(rot->request);
+//     if (rot->chip)
+//         gpiod_chip_close(rot->chip);
+//     is_initialized = false;
+// }
 
-    rot.pulses = 10; // starts off at 10Hz
-    int previousPulses = 0; // to check if encoder was actually turned
-    int pwmPeriod = 0; // convert between frequency and period
-
-    long seconds = 0;
-    long nanoseconds = 1000000; 
-    struct timespec reqDelay = {seconds, nanoseconds}; // Define a delay of 1ms
-
-    //These are variables used for the manual timing of low frequencies
-    long long currentTime = 0;
-    long long elapsedTime = 0;
-    long long startTime = 0;
+// // Global rotary_t variable for use within thread function
+// static rotary_t rot;
 
 
-    if (rotary_init(&rot, "/dev/gpiochip1", 41, 33) < 0) {
-        return NULL;
-    }
-    rot.pulses = 10;
-    while (polling_on) {
-        rotary_poll(&rot);
+// /*
+// // Thread function that initializes Rotary Encoder and sets PWM duty cycle off polling encoder
+// static void* pollForPWM(void *arg) {
+//     PWM_init(); // Initialize the PWM HAL module
+//     set_period(100000000); // start off at 10Hz
+//     set_duty_cycle(0);
+//     set_duty_cycle(1000000000);
 
-        if(rot.pulses == 1){
-            // Hardware PWM can’t go this slow → manual toggle mode
-            // 1 Hz manual toggle: 0.5s ON, 0.5s OFF
-            set_period(100000000);
-            set_duty_cycle(100000000); // LED ON
-            elapsedTime = 0;
-            startTime = getTimeInMs(); // alternative for sleep() that also does polling
-            while(elapsedTime < 500) {
-                currentTime = getTimeInMs();
-                elapsedTime = currentTime - startTime;
-                rotary_poll(&rot);
-            }
+//     rot.pulses = 10; // starts off at 10Hz
+//     int previousPulses = 0; // to check if encoder was actually turned
+//     int pwmPeriod = 0; // convert between frequency and period
 
-            set_duty_cycle(0);         // LED OFF
-            elapsedTime = 0;
-            startTime = getTimeInMs();
-            while(elapsedTime < 500) {
-                currentTime = getTimeInMs();
-                elapsedTime = currentTime - startTime;
-                rotary_poll(&rot);
-                if (rot.pulses == 1) {
-                    continue;
-                }
-            }
-        }
-        else if(rot.pulses == 2){
-            // 2 Hz manual toggle: 0.25 s ON, 0.25 s OFF
+//     long seconds = 0;
+//     long nanoseconds = 1000000; 
+//     struct timespec reqDelay = {seconds, nanoseconds}; // Define a delay of 1ms
+
+//     //These are variables used for the manual timing of low frequencies
+//     long long currentTime = 0;
+//     long long elapsedTime = 0;
+//     long long startTime = 0;
+
+
+//     if (rotary_init(&rot, "/dev/gpiochip1", 41, 33) < 0) {
+//         return NULL;
+//     }
+//     rot.pulses = 10;
+//     while (polling_on) {
+//         rotary_poll(&rot);
+
+//         if(rot.pulses == 1){
+//             // Hardware PWM can’t go this slow → manual toggle mode
+//             // 1 Hz manual toggle: 0.5s ON, 0.5s OFF
+//             set_period(100000000);
+//             set_duty_cycle(100000000); // LED ON
+//             elapsedTime = 0;
+//             startTime = getTimeInMs(); // alternative for sleep() that also does polling
+//             while(elapsedTime < 500) {
+//                 currentTime = getTimeInMs();
+//                 elapsedTime = currentTime - startTime;
+//                 rotary_poll(&rot);
+//             }
+
+//             set_duty_cycle(0);         // LED OFF
+//             elapsedTime = 0;
+//             startTime = getTimeInMs();
+//             while(elapsedTime < 500) {
+//                 currentTime = getTimeInMs();
+//                 elapsedTime = currentTime - startTime;
+//                 rotary_poll(&rot);
+//                 if (rot.pulses == 1) {
+//                     continue;
+//                 }
+//             }
+//         }
+//         else if(rot.pulses == 2){
+//             // 2 Hz manual toggle: 0.25 s ON, 0.25 s OFF
             
-            set_period(100000000);
-            set_duty_cycle(99999999);// LED ON
-            elapsedTime = 0;
-            startTime = getTimeInMs(); // alternative for sleep() that also does polling
-            while(elapsedTime < 250) {
-                rotary_poll(&rot);
-                nanosleep(&(struct timespec){0, 1000000}, NULL);
-                currentTime = getTimeInMs();
-                elapsedTime = currentTime - startTime;
-            }
+//             set_period(100000000);
+//             set_duty_cycle(99999999);// LED ON
+//             elapsedTime = 0;
+//             startTime = getTimeInMs(); // alternative for sleep() that also does polling
+//             while(elapsedTime < 250) {
+//                 rotary_poll(&rot);
+//                 nanosleep(&(struct timespec){0, 1000000}, NULL);
+//                 currentTime = getTimeInMs();
+//                 elapsedTime = currentTime - startTime;
+//             }
 
-            set_duty_cycle(0);         // LED OFF
-            elapsedTime = 0;
-            startTime = getTimeInMs();
-            while(elapsedTime < 250) {
-                rotary_poll(&rot);
-                nanosleep(&(struct timespec){0, 1000000}, NULL);
-                currentTime = getTimeInMs();
-                elapsedTime = currentTime - startTime;
-                if (rot.pulses == 2) {
-                    continue;
-                }
-            }
-        }
+//             set_duty_cycle(0);         // LED OFF
+//             elapsedTime = 0;
+//             startTime = getTimeInMs();
+//             while(elapsedTime < 250) {
+//                 rotary_poll(&rot);
+//                 nanosleep(&(struct timespec){0, 1000000}, NULL);
+//                 currentTime = getTimeInMs();
+//                 elapsedTime = currentTime - startTime;
+//                 if (rot.pulses == 2) {
+//                     continue;
+//                 }
+//             }
+//         }
 
-        //If no change for frequnecies >2 Hz, sleep and continue
-        if (rot.pulses == previousPulses && previousPulses != 2) {
-            nanosleep(&reqDelay, NULL);
-            continue;
-        }
+//         //If no change for frequnecies >2 Hz, sleep and continue
+//         if (rot.pulses == previousPulses && previousPulses != 2) {
+//             nanosleep(&reqDelay, NULL);
+//             continue;
+//         }
 
-        // Clamp frequency range
-        if (rot.pulses > 500) {
-            rot.pulses = 500;
-            // Track the new state
-            previousPulses = rot.pulses;
-        }
+//         // Clamp frequency range
+//         if (rot.pulses > 500) {
+//             rot.pulses = 500;
+//             // Track the new state
+//             previousPulses = rot.pulses;
+//         }
 
-        if (rot.pulses <= 0) {
-            // Zero frequency - turn off LED
-            rot.pulses = 0;
-            set_duty_cycle(0);
-            // Do NOT set_period here; leave previous frequency
-            // Track the new state
-            previousPulses = rot.pulses;            
-        } 
-        else {
-            // Compute new period
-            pwmPeriod = (int)(1000000000.0 / rot.pulses);
+//         if (rot.pulses <= 0) {
+//             // Zero frequency - turn off LED
+//             rot.pulses = 0;
+//             set_duty_cycle(0);
+//             // Do NOT set_period here; leave previous frequency
+//             // Track the new state
+//             previousPulses = rot.pulses;            
+//         } 
+//         else {
+//             // Compute new period
+//             pwmPeriod = (int)(1000000000.0 / rot.pulses);
 
-            set_period(pwmPeriod);
-            // 50% duty cycle based on the new period
-            set_duty_cycle(pwmPeriod / 2);
+//             set_period(pwmPeriod);
+//             // 50% duty cycle based on the new period
+//             set_duty_cycle(pwmPeriod / 2);
 
-            // Track the new state
-            previousPulses = rot.pulses;
-        }
+//             // Track the new state
+//             previousPulses = rot.pulses;
+//         }
 
-        // Sleep to avoid CPU hogging
-        nanosleep(&reqDelay, NULL);
-    }
-    rotary_close(&rot);
-    return arg;
-}
+//         // Sleep to avoid CPU hogging
+//         nanosleep(&reqDelay, NULL);
+//     }
+//     rotary_close(&rot);
+//     return arg;
+// }
+// */
 
-// Start polling thread
-void startPolling() {
-    assert(!polling_on);
-    polling_on = true;
-    if (pthread_create(&pollThread, NULL, pollForPWM, NULL) != 0) {
-        perror("Failed to create polling thread");
-        return;
-    }
+// /*
+// // Start polling thread
+// void startPolling() {
+//     assert(!polling_on);
+//     polling_on = true;
+//     if (pthread_create(&pollThread, NULL, pollForPWM, NULL) != 0) {
+//         perror("Failed to create polling thread");
+//         return;
+//     }
 
-}
+// }
+// */
 
-// End polling thread, cleanup PWM
-void endPolling() { 
-    assert(polling_on);
-    polling_on = false;
-    pthread_join(pollThread, NULL);
-    PWM_cleanup();
-}
+// // End polling thread, cleanup PWM
+// void endPolling() { 
+//     assert(polling_on);
+//     polling_on = false;
+//     pthread_join(pollThread, NULL);
+//     PWM_cleanup();
+// }
 
-// Expose static member variable rot.pulses (to allow terminal to display frequency of LED's PWM flashing) 
-int freqExpose() {
-    assert(polling_on);
-    int freq = rot.pulses;
-    return freq;
-}
+// // Expose static member variable rot.pulses (to allow terminal to display frequency of LED's PWM flashing) 
+// int freqExpose() {
+//     assert(polling_on);
+//     int freq = rot.pulses;
+//     return freq;
+// }
+

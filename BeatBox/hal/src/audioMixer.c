@@ -10,9 +10,10 @@
 #include <pthread.h>
 #include <limits.h>
 #include <alloca.h> // needed for mixer
-//#include "hal/audioMixer.h"
-#include "/home/victor/embeddedBeagle/work/BeatBox/hal/include/hal/audioMixer.h"
+#include "hal/audioMixer.h"
+//#include "/home/victor/embeddedBeagle/work/BeatBox/hal/include/hal/audioMixer.h"
 
+static bool beat_on = false;
 
 static snd_pcm_t *handle;
 
@@ -46,9 +47,19 @@ static playbackSound_t soundBites[MAX_SOUND_BITES];
 void* playbackThread(void* arg);
 static _Bool stopping = false;
 static pthread_t playbackThreadId;
+
 static pthread_mutex_t audioMutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int volume = 0;
+
+static pthread_t beatThread;
+static wavedata_t base;
+static wavedata_t hiHat;
+static wavedata_t snare;
+static void* beatPlayer(void *arg);
+
+static long seconds;
+static long nanoseconds; // NEEDS TO CHANGE BASED ON BPM
 
 void AudioMixer_init(void)
 {
@@ -58,12 +69,12 @@ void AudioMixer_init(void)
 	// REVISIT:- Implement this. Hint: set the pSound pointer to NULL for each
 	//     sound bite.
 
-	wavedata_t base;
-	AudioMixer_readWaveFileIntoMemory("100051__menegass__gui-drum-bd-hard.wav", &base);
-	wavedata_t hiHat;
-	AudioMixer_readWaveFileIntoMemory("100053__menegass__gui-drum-cc.wav", &hiHat);
-	wavedata_t snare;
-	AudioMixer_readWaveFileIntoMemory("100059__menegass__gui-drum-snare-soft.wav", &snare);
+
+	AudioMixer_readWaveFileIntoMemory("wave-files/100051__menegass__gui-drum-bd-hard.wav", &base);
+	AudioMixer_readWaveFileIntoMemory("wave-files/100053__menegass__gui-drum-cc.wav", &hiHat);
+	AudioMixer_readWaveFileIntoMemory("wave-files/100059__menegass__gui-drum-snare-soft.wav", &snare); // Load in wave files
+	
+
 
 	for (int i = 0; i < MAX_SOUND_BITES; i++) { // set the pSound pointer to NULL for each sound bite
 		soundBites[i].pSound = NULL;
@@ -85,7 +96,7 @@ void AudioMixer_init(void)
 			NUM_CHANNELS,
 			SAMPLE_RATE,
 			1,			// Allow software resampling
-			50000);		// 0.05 seconds per buffer
+			54000);		// 0.054 seconds per buffer
 	if (err < 0) {
 		printf("Playback open error: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
@@ -99,8 +110,18 @@ void AudioMixer_init(void)
 	// ..allocate playback buffer:
 	playbackBuffer = malloc(playbackBufferSize * sizeof(*playbackBuffer));
 
-	// Launch playback thread:
-	pthread_create(&playbackThreadId, NULL, playbackThread, NULL);
+	// Launch playback and beat threads:
+	if (pthread_create(&playbackThreadId, NULL, playbackThread, NULL) != 0) {
+		perror("Failed to create playback thread");
+		return;
+    }
+
+	assert(!beat_on);
+    beat_on = true;
+    if (pthread_create(&beatThread, NULL, beatPlayer, NULL) != 0) {
+        perror("Failed to create beat thread");
+        return;
+    }
 }
 
 
@@ -142,6 +163,8 @@ void AudioMixer_readWaveFileIntoMemory(char *fileName, wavedata_t *pSound)
 				pSound->numSamples, fileName, samplesRead);
 		exit(EXIT_FAILURE);
 	}
+
+	fclose(file);
 }
 
 void AudioMixer_freeWaveFileData(wavedata_t *pSound)
@@ -171,13 +194,19 @@ void AudioMixer_queueSound(wavedata_t *pSound)
 	 *    not being able to play another wave file.
 	 */
 
+
+	pthread_mutex_lock(&audioMutex);
+
 	for (int i = 0; i < MAX_SOUND_BITES; i++) {
 		if (soundBites[i].pSound == NULL) {
-			soundBites[i].pSound = &pSound; // insert sound bite
+			soundBites[i].pSound = pSound; // insert sound bite
 			soundBites[i].location = 0; // THIS IS PROBABLY RIGHT? LIKE WE START PLAYING AT A LOCATION OF 0?
-		return;
+			pthread_mutex_unlock(&audioMutex);
+			return;
 		}
 	}
+
+	pthread_mutex_unlock(&audioMutex);
 
 	// No free slot is found
 	printf("No free slot is found for sound bite.\n");
@@ -190,7 +219,9 @@ void AudioMixer_cleanup(void)
 
 	// Stop the PCM generation thread
 	stopping = true;
+	beat_on = false;
 	pthread_join(playbackThreadId, NULL);
+	pthread_join(beatThread, NULL);
 
 	// Shutdown the PCM output, allowing any pending sound to play out (drain)
 	snd_pcm_drain(handle);
@@ -200,7 +231,13 @@ void AudioMixer_cleanup(void)
 	// (note that any wave files read into wavedata_t records must be freed
 	//  in addition to this by calling AudioMixer_freeWaveFileData() on that struct.)
 	free(playbackBuffer);
+
+
 	playbackBuffer = NULL;
+
+	AudioMixer_freeWaveFileData(&base);
+	AudioMixer_freeWaveFileData(&snare);
+	AudioMixer_freeWaveFileData(&hiHat); // free wave files
 
 	printf("Done stopping audio...\n");
 	fflush(stdout);
@@ -272,7 +309,10 @@ static void fillPlaybackBuffer(short *buff, int size)
 
 	memset(buff, 0, sizeof(short) * size); // Wipe the buff to all 0's to clear any previous PCM data
 
-	pthread_mutex_lock(&audioMutex); // lock access (SHOULD MAKE THIS MORE EFFICIENT, MAYBE JUST Copying soundBites[] into a temporary array while locked?)
+
+
+	pthread_mutex_lock(&audioMutex);
+
 
 	for (int i = 0; i < MAX_SOUND_BITES; i++) {
 		if (soundBites[i].pSound == NULL) {
@@ -302,7 +342,7 @@ static void fillPlaybackBuffer(short *buff, int size)
 		}
 	}
 
-	pthread_mutex_unlock(&audioMutex); // unlock access
+	pthread_mutex_unlock(&audioMutex);
 
 
 
@@ -373,11 +413,67 @@ void* playbackThread(void* _arg)
 					frames);
 			exit(EXIT_FAILURE);
 		}
-		if (frames > 0 && frames < playbackBufferSize) {
+		if (frames > 0 && (unsigned long long)frames < playbackBufferSize) {
 			printf("Short write (expected %li, wrote %li)\n",
 					playbackBufferSize, frames);
 		}
 	}
 
-	return NULL;
+	return _arg;
+}
+
+int beatType = 0; // default rock beat is "0", alt is "1", none is "2"
+int BPM = 100; // deafault Beats per Minute is 100
+
+// Beat setup thread (sequences the beat)
+static void* beatPlayer(void *arg) {
+    seconds = 0;
+	nanoseconds = 0;
+	struct timespec reqDelay = {seconds, nanoseconds}; // Define a delay of 0.3 sec (for 100 BPM I think?)
+
+	while(beat_on) {
+		double seconds = 60.0 / (BPM * 2.0);
+		reqDelay.tv_sec = (time_t)seconds;
+		reqDelay.tv_nsec = (long)((seconds - reqDelay.tv_sec) * 1e9);
+    	if (beatType == 0) {
+			AudioMixer_queueSound(&hiHat);
+			AudioMixer_queueSound(&base);
+
+			nanosleep(&reqDelay, NULL);
+
+			AudioMixer_queueSound(&hiHat);
+
+			nanosleep(&reqDelay, NULL);
+
+			AudioMixer_queueSound(&hiHat);
+			AudioMixer_queueSound(&snare);
+
+			nanosleep(&reqDelay, NULL);
+
+			AudioMixer_queueSound(&hiHat);
+
+			nanosleep(&reqDelay, NULL);
+		}
+		else if (beatType == 1) {
+			AudioMixer_queueSound(&base);
+
+			nanosleep(&reqDelay, NULL);
+
+			AudioMixer_queueSound(&snare);
+
+			nanosleep(&reqDelay, NULL);
+
+			AudioMixer_queueSound(&base);
+
+			nanosleep(&reqDelay, NULL);
+
+			AudioMixer_queueSound(&hiHat);
+
+			nanosleep(&reqDelay, NULL);
+		}
+		else {
+			sleep(1);
+		}
+    }
+    return arg;
 }
