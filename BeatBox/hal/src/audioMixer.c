@@ -422,20 +422,77 @@ void* playbackThread(void* _arg)
 	return _arg;
 }
 
-int beatType = 0; // default rock beat is "0", alt is "1", none is "2"
-int BPM = 100; // deafault Beats per Minute is 100
+static int beatType = 0; // default rock beat is "0", alt is "1", none is "2"
+static int BPM = 100; // deafault Beats per Minute is 100
+
+// expose static beat type variable
+int getBeatType() {
+	return beatType;
+}
+// set new beat type
+void setBeatType(int newBeatType) {
+	if (newBeatType > 2 || newBeatType < 0) {
+		printf("Invalid beat type\n");
+		return;
+	}
+	else {
+		pthread_mutex_lock(&audioMutex);
+		beatType = newBeatType;
+		pthread_mutex_unlock(&audioMutex);
+	}
+}
+
+// expose static BPM variable
+int getBPM() {
+	return BPM;
+}
+// set new BPM
+void setBPM (int newBPM) {
+	int tempBPM = newBPM;
+	if (tempBPM >= 200) {
+		tempBPM = 200; // max BPM  = 200
+	}
+	else if (tempBPM <= 1) {
+		tempBPM = 1; // no negative/zero BPM
+	}
+	pthread_mutex_lock(&audioMutex);
+	BPM = tempBPM;
+	pthread_mutex_unlock(&audioMutex);
+}
+
+// expose static volume variable
+int getVolume() {
+	return volume;
+}
+// set new volume
+void setVolume(int newVolume) {
+	int tempVolume = newVolume;
+	if (tempVolume >= AUDIOMIXER_MAX_VOLUME) {
+		tempVolume = AUDIOMIXER_MAX_VOLUME;
+	}
+	pthread_mutex_lock(&audioMutex);
+	volume = tempVolume;
+	pthread_mutex_unlock(&audioMutex);
+}
+
 
 // Beat setup thread (sequences the beat)
 static void* beatPlayer(void *arg) {
+	int temporaryBPM = 100;
+	int temporaryBeatType = 0;
     seconds = 0;
 	nanoseconds = 0;
 	struct timespec reqDelay = {seconds, nanoseconds}; // Define a delay of 0.3 sec (for 100 BPM I think?)
 
 	while(beat_on) {
-		double seconds = 60.0 / (BPM * 2.0);
+		pthread_mutex_lock(&audioMutex);
+		temporaryBPM = BPM;
+		temporaryBeatType = beatType;
+		pthread_mutex_unlock(&audioMutex);
+		double seconds = 60.0 / (temporaryBPM * 2.0);
 		reqDelay.tv_sec = (time_t)seconds;
 		reqDelay.tv_nsec = (long)((seconds - reqDelay.tv_sec) * 1e9);
-    	if (beatType == 0) {
+    	if (temporaryBeatType == 0) {
 			AudioMixer_queueSound(&hiHat);
 			AudioMixer_queueSound(&base);
 
@@ -454,7 +511,7 @@ static void* beatPlayer(void *arg) {
 
 			nanosleep(&reqDelay, NULL);
 		}
-		else if (beatType == 1) {
+		else if (temporaryBeatType == 1) {
 			AudioMixer_queueSound(&base);
 
 			nanosleep(&reqDelay, NULL);

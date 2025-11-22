@@ -11,9 +11,11 @@
 #include <time.h>
 #include <stdbool.h>
 #include "hal/accessSPI.h"
+#include "hal/audioMixer.h"
 
 
 static bool is_initialized = false; // bool to easily check if joystick is initialized
+static int fd = 0;
 
 // Initialize SPI device and return file descriptor
 int spi_init(const char* dev, uint32_t speed_hz) {
@@ -24,7 +26,7 @@ int spi_init(const char* dev, uint32_t speed_hz) {
     uint8_t bits = 8;
     //uint32_t speed_hz = 250000;
 
-    int fd = open(dev, O_RDWR);  // open is a low-level system call that returns a raw file descriptor (which is what ioctl() wants), not a FILE* like fopen() returns
+    fd = open(dev, O_RDWR);  // open is a low-level system call that returns a raw file descriptor (which is what ioctl() wants), not a FILE* like fopen() returns
 
     if (fd < 0) {  // if open() fails, it returns -1
         perror("open");
@@ -46,8 +48,8 @@ int spi_init(const char* dev, uint32_t speed_hz) {
         return -1;
     }
 
-    is_initialized = true;
     return fd;
+    is_initialized = true;
 }
 
 // Read a channel from MCP3208 ADC chip
@@ -108,5 +110,24 @@ JoyDir getJoyDir(int fd, uint32_t speed_hz) { // We always want to check both ch
     else {
         return UNDEFINED;
     }
+}
+
+static void* JoyStick_thread(void *arg) {
+    uint32_t speed_hz = 250000;
+    const char* dev = "/dev/spidev0.0"; // point to the SPI 0 device (joystick)
+    const int fd = spi_init(dev, speed_hz); // Initialize joystick over SPI
+    JoyDir playerDir;
+
+    while (true) {
+        playerDir = getJoyDir(fd, speed_hz); // record what direction player pressed
+        if (playerDir == CENTER) { 
+            continue; // if no input, restart loop
+        }
+        else if (playerDir == UP) {
+            // CONTINUE JOYSTICK IMPLEMENTATION!!!
+        }
+    }
+
+
 }
 

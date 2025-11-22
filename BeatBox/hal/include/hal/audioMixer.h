@@ -30,4 +30,16 @@ void AudioMixer_queueSound(wavedata_t *pSound);
 int  AudioMixer_getVolume();
 void AudioMixer_setVolume(int newVolume);
 
+// Get/set the beat type.
+int getBeatType();
+void setBeatType(int newBeatType);
+
+// Get/set the BPM.
+int getBPM();
+void setBPM (int newBPM);
+
+// Get/set the volume.
+int getVolume();
+void setVolume(int newBPM);
+
 #endif

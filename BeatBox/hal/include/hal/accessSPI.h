@@ -18,6 +18,8 @@ typedef enum {
 
 int spi_init(const char* dev, uint32_t speed_hz);
 
+static void* JoyStick_thread(void *arg);
+
 void spi_close(int fd);
 
 JoyDir getJoyDir(int fd, uint32_t speed_hz);
