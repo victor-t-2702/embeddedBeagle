@@ -42,4 +42,8 @@ void setBPM (int newBPM);
 int getVolume();
 void setVolume(int newBPM);
 
+void playBase(void);
+void playHiHat(void);
+void playSnare(void);
+
 #endif

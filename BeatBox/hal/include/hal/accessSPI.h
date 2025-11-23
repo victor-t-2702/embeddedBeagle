@@ -16,12 +16,14 @@ typedef enum {
     UNDEFINED
 } JoyDir;
 
-int spi_init(const char* dev, uint32_t speed_hz);
+void spi_init(const char* dev, uint32_t speed_hz);
 
-static void* JoyStick_thread(void *arg);
+int read_ch(int ch, uint32_t speed_hz);
 
-void spi_close(int fd);
+//static void* JoyStick_thread(void *arg);
 
-JoyDir getJoyDir(int fd, uint32_t speed_hz);
+void spi_close();
+
+//JoyDir getJoyDir(int fd, uint32_t speed_hz);
 
 #endif

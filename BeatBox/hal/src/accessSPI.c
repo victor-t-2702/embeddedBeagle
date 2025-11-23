@@ -18,7 +18,8 @@ static bool is_initialized = false; // bool to easily check if joystick is initi
 static int fd = 0;
 
 // Initialize SPI device and return file descriptor
-int spi_init(const char* dev, uint32_t speed_hz) {
+//const char* dev, uint32_t speed_hz ||| THis is what was the input originally
+void spi_init(const char* dev, uint32_t speed_hz) {
     assert(!is_initialized); // check if SPI device is already initialized
     
     //const char* dev = "/dev/spidev0.0"; // point to the SPI 0 device
@@ -30,30 +31,30 @@ int spi_init(const char* dev, uint32_t speed_hz) {
 
     if (fd < 0) {  // if open() fails, it returns -1
         perror("open");
-        return -1;
+        //return -1;
     }
 
     if (ioctl(fd, SPI_IOC_WR_MODE, &mode) == -1) {  // SPI_IOC_WR_MODE = tells the kernel: “set the SPI mode (clock polarity, phase, etc.)”, with &mode being a pointer to the desired SPI mode
         perror("mode");  // If setting SPI mode fails (ie. ioctl() returns -1, throw an error)
-        return -1; 
+        //return -1; 
     }
 
     if (ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits) == -1) {  // set bits per SPI word
         perror("bpw");
-        return -1;
+        //return -1;
     }
 
     if (ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed_hz) == -1) {  // set SPI clock speed
         perror("speed");
-        return -1;
+        //return -1;
     }
 
-    return fd;
     is_initialized = true;
+
 }
 
 // Read a channel from MCP3208 ADC chip
-static int read_ch(int fd, int ch, uint32_t speed_hz) {  // marked static because only functions within this file (eg. getJoyDir()) will use it
+int read_ch(int ch, uint32_t speed_hz) {  // marked static because only functions within this file (eg. getJoyDir()) will use it
     usleep(500); // sleep for 500 microseconds before doing a read to avoid garbage SPI data
     
     assert(is_initialized); // check if joystick has been properly initialized
@@ -78,12 +79,13 @@ static int read_ch(int fd, int ch, uint32_t speed_hz) {  // marked static becaus
 }
 
 
-void spi_close(int fd) {
+void spi_close() {
     assert(is_initialized);
     is_initialized = false;
     close(fd);
 }
 
+/*
 JoyDir getJoyDir(int fd, uint32_t speed_hz) { // We always want to check both channels (i.e. x and y directions)
     assert(is_initialized); // check if joystick has been properly initialized
     
@@ -129,5 +131,5 @@ static void* JoyStick_thread(void *arg) {
     }
 
 
-}
+}*/
 

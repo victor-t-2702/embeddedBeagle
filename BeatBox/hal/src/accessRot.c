@@ -15,6 +15,7 @@
 #include "hal/audioMixer.h"
 #include "hal/accessRot.h"
 
+/*
 static bool is_initialized = false; // Flag to ensure module is initialized
 static bool polling_on = false; // Flag to ensure thread is supposed to be running
 pthread_t pollThread; // Polling thread
@@ -69,6 +70,7 @@ int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigne
 }
 
 //Function to get the current time in ms, used to implement a timer in the pollForPWM for low frequencies
+
 static long long getTimeInMs(void)
 {
     struct timespec spec;
@@ -180,3 +182,4 @@ void endPolling() {
     pthread_join(pollThread, NULL);
 }
 
+*/

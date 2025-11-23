@@ -70,9 +70,10 @@ void AudioMixer_init(void)
 	//     sound bite.
 
 
-	AudioMixer_readWaveFileIntoMemory("wave-files/100051__menegass__gui-drum-bd-hard.wav", &base);
-	AudioMixer_readWaveFileIntoMemory("wave-files/100053__menegass__gui-drum-cc.wav", &hiHat);
-	AudioMixer_readWaveFileIntoMemory("wave-files/100059__menegass__gui-drum-snare-soft.wav", &snare); // Load in wave files
+	//Originally it didnt have the beatbox- in front, so just wav efiles
+	AudioMixer_readWaveFileIntoMemory("beatbox-wave-files/100051__menegass__gui-drum-bd-hard.wav", &base);
+	AudioMixer_readWaveFileIntoMemory("beatbox-wave-files/100053__menegass__gui-drum-cc.wav", &hiHat);
+	AudioMixer_readWaveFileIntoMemory("beatbox-wave-files/100059__menegass__gui-drum-snare-soft.wav", &snare); // Load in wave files
 	
 
 
@@ -124,6 +125,17 @@ void AudioMixer_init(void)
     }
 }
 
+void playBase(void){
+	AudioMixer_queueSound(&base);
+}
+
+void playHiHat(void){
+	AudioMixer_queueSound(&hiHat);
+}
+
+void playSnare(void){
+	AudioMixer_queueSound(&snare);
+}
 
 // Client code must call AudioMixer_freeWaveFileData to free dynamically allocated data.
 void AudioMixer_readWaveFileIntoMemory(char *fileName, wavedata_t *pSound)
@@ -266,7 +278,8 @@ void AudioMixer_setVolume(int newVolume)
     long min, max;
     snd_mixer_t *mixerHandle;
     snd_mixer_selem_id_t *sid;
-    const char *card = "default";
+    //const char *card = "default"; this didnt work with default i changed it to hw:1
+	const char *card = "hw:1";
     // const char *selem_name = "PCM";	// For ZEN cape
     const char *selem_name = "Speaker";	// For USB Audio
 

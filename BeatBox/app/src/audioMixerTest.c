@@ -4,30 +4,36 @@
 #include <pthread.h>
 #include "hal/audioMixer.h"
 #include "hal/accessRot.h"
+#include "hal/accessSPI.h"
+#include "hal/accelerometer.h"
 
 
 int main(void)
 {
     printf("Initializing audio mixer...\n");
     AudioMixer_init(); // start beat sequencing and playback thread
-    startPolling(); // Start rotary encoder polling thread
-    extern int beatType;
-    extern int BPM;
+    spi_init("/dev/spidev0.0", 500);
+    accelerometer_init();
+    //startPolling(); // Start rotary encoder polling thread
+    //extern int beatType;
+    //extern int BPM;
 
     while(1) {
         sleep(10);
-        beatType = 2;
+        //beatType = 2;
         sleep(5);
-        beatType = 1;
+        //beatType = 1;
         sleep(10);
-        BPM = 200;
+        //BPM = 200;
         sleep(10);
         
     }
 
     printf("Cleaning up...\n");
-    endPolling(); // end rotary encoder thread
-    AudioMixer_cleanup(); // Cleans up and stops playback and beat sequencing threads
+    //endPolling(); // end rotary encoder thread
+    spi_close();
+    AudioMixer_cleanup(); // Cleans up and stops playback and beat sequencing threads   
+    accelerometer_cleanup();
 
     return 0;
 }
