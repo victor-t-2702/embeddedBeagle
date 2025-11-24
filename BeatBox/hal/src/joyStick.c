@@ -23,9 +23,9 @@ JoyDir getJoyDir(uint32_t speed_hz) { // We always want to check both channels (
     assert(is_initialized); // check if joystick has been properly initialized
     
     int joyVal_X = read_ch(4, speed_hz); // check channel 4 (X direction)
-    //printf("X = %d", joyVal_X);
+    printf("X = %d", joyVal_X);
     int joyVal_Y = read_ch(5, speed_hz); // check channel 5 (Y direction)
-    //printf("Y = %d", joyVal_Y);
+    printf("Y = %d", joyVal_Y);
 
     if (joyVal_Y <= 2600 && joyVal_Y >= 1500 && joyVal_X <= 2600 && joyVal_X >= 1500) {
         return CENTER;
