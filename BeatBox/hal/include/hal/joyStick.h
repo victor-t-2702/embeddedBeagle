@@ -18,7 +18,7 @@ typedef enum {
 static void* JoyStick_thread(void *arg);
 
 // Pool SPI to get direction joystick is pushed
-JoyDir getJoyDir(int fd, uint32_t speed_hz);
+JoyDir getJoyDir(uint32_t speed_hz);
 
 // Stop joystick thread and clean up SPI
 void joystickStop();
