@@ -165,7 +165,7 @@ static void* udp_listener(void* arg) {
             const char* enterReply = "OK";
             sendto(sockfd, enterReply, strlen(enterReply), 0,
                    (struct sockaddr*)&client_addr, len);
-            //programActive = false; // terminate program
+            programActive = false; // terminate program
         }
         
     }
