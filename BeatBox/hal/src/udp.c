@@ -158,7 +158,7 @@ static void* udp_listener(void* arg) {
             //int assigned_items = sscanf(buffer, "stop %d", &val);
 
             char reply[6];
-            sprintf (reply, "OK");
+            strcpy(reply, "OK");
             sendto(sockfd, reply, strlen(reply), 0,
                 (struct sockaddr*)&client_addr, len);
             //programActive = false; // terminate program
