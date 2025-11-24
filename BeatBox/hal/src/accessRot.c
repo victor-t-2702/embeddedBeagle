@@ -158,7 +158,7 @@ static void* pollingThread(void *arg) {
 
 
 
-    if (rotary_init(&rot, "/dev/gpiochip1", 41, 33, 43) < 0) { // 43 IS A PLACE HOLDER!!!!!!!!
+    if (rotary_init(&rot, "/dev/gpiochip1", 41, 33, 42) < 0) { // A 41 = GPIO 22, B 33 = GPIO 27, C 42 = GPIO 25
         printf("Failed to initialize rotary encoder");
         return NULL;
     }

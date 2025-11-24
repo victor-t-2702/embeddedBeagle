@@ -7,6 +7,7 @@
 #include "hal/accessSPI.h"
 #include "hal/accelerometer.h"
 #include "hal/terminal.h"
+#include "hal/joyStick.h"
 #include "hal/periodTimer.h"
 
 int main(void)
@@ -16,6 +17,8 @@ int main(void)
     AudioMixer_init(); // start beat sequencing and playback thread
     spi_init("/dev/spidev0.0", 500);
     accelerometer_init();
+    startPolling(); // Start rotary encoder polling thread
+    joystick_init();
     terminal_start();
     //startPolling(); // Start rotary encoder polling thread
     //extern int beatType;
@@ -39,7 +42,7 @@ int main(void)
     spi_close();
     AudioMixer_cleanup(); // Cleans up and stops playback and beat sequencing threads   
     accelerometer_cleanup();
-    
+    joystickStop();
 
     return 0;
 }

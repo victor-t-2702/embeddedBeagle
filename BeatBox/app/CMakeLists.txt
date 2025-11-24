@@ -17,6 +17,9 @@ target_link_libraries(${PROJECT_NAME} LINK_PRIVATE asound)
 target_link_libraries(${PROJECT_NAME} PRIVATE hal ${ALSA_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} PRIVATE hal asound)
 
+
+target_link_libraries(hal gpiod)
+
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
   COMMAND "$(CMAKE_COMMAND)" -E copy_directory
       "${CMAKE_SOURCE_DIR}/beatbox-wave-files"

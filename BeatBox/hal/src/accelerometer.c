@@ -123,7 +123,7 @@ static void* detectMovement(void* arg){
                 z.paused = false;
             }
         }
-        usleep(100000);
+        usleep(10000);
     }
 
     return arg;

@@ -75,6 +75,7 @@ static pthread_t joystickThreadID;
 void joystick_init() {
     assert(!joystick_on);
     joystick_on = true;
+    is_initialized = true;
     // Launch joystick polling thread:
     if (pthread_create(&joystickThreadID, NULL, JoyStick_thread, NULL) != 0) {
         perror("Failed to create joystick thread");
