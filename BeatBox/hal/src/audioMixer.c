@@ -492,7 +492,7 @@ static void* beatPlayer(void *arg) {
 		double seconds = 60.0 / (temporaryBPM * 2.0);
 		reqDelay.tv_sec = (time_t)seconds;
 		reqDelay.tv_nsec = (long)((seconds - reqDelay.tv_sec) * 1e9);
-    	if (temporaryBeatType == 0) {
+    	if (temporaryBeatType == 1) {
 			AudioMixer_queueSound(&hiHat);
 			AudioMixer_queueSound(&base);
 
@@ -511,7 +511,7 @@ static void* beatPlayer(void *arg) {
 
 			nanosleep(&reqDelay, NULL);
 		}
-		else if (temporaryBeatType == 1) {
+		else if (temporaryBeatType == 2) {
 			AudioMixer_queueSound(&base);
 
 			nanosleep(&reqDelay, NULL);
@@ -528,7 +528,7 @@ static void* beatPlayer(void *arg) {
 
 			nanosleep(&reqDelay, NULL);
 		}
-		else {
+		else if (temporaryBeatType == 0) {
 			sleep(1);
 		}
     }
