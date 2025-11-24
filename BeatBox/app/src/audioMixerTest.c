@@ -10,7 +10,6 @@
 #include "hal/joyStick.h"
 #include "hal/periodTimer.h"
 
-extern volatile bool programActive;
 
 int main(void)
 {
@@ -24,7 +23,7 @@ int main(void)
     terminal_start();
 
 
-    while(!stopProgram) {
+    while(programActive) {
         sleep(1);
     }
 
