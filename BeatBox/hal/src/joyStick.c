@@ -27,8 +27,14 @@ JoyDir getJoyDir(uint32_t speed_hz) { // We always want to check both channels (
     int joyVal_Y = read_ch(5, speed_hz); // check channel 5 (Y direction)
     printf("Y = %d", joyVal_Y);
 
-    if (joyVal_Y == 0) {
-        return UNDEFINED;
+    static int yLowCount = 0;       // persists between calls
+    if (joyVal_Y < 1500) {
+        yLowCount++;
+        if (yLowCount > 10) {       // ~10 × loop delay (5ms) = 50ms
+            return DOWN;
+        }
+    } else {
+        yLowCount = 0;
     }
 
     if (joyVal_Y <= 2600 && joyVal_Y >= 1500 && joyVal_X <= 2600 && joyVal_X >= 1500) {
@@ -37,9 +43,9 @@ JoyDir getJoyDir(uint32_t speed_hz) { // We always want to check both channels (
     else if (joyVal_Y > 2600) {
         return UP;
     }
-    else if (joyVal_Y < 1500) {
-        return DOWN;
-    }
+    // else if (joyVal_Y < 1500) {
+    //     return DOWN;
+    // }
     else if (joyVal_X > 2600) {
         return RIGHT;
     }
