@@ -27,6 +27,10 @@ JoyDir getJoyDir(uint32_t speed_hz) { // We always want to check both channels (
     int joyVal_Y = read_ch(5, speed_hz); // check channel 5 (Y direction)
     printf("Y = %d", joyVal_Y);
 
+    if (joyVal_Y == 0) {
+        return UNDEFINED;
+    }
+
     if (joyVal_Y <= 2600 && joyVal_Y >= 1500 && joyVal_X <= 2600 && joyVal_X >= 1500) {
         return CENTER;
     }
