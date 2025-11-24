@@ -23,9 +23,9 @@ JoyDir getJoyDir(uint32_t speed_hz) { // We always want to check both channels (
     assert(is_initialized); // check if joystick has been properly initialized
     
     int joyVal_X = read_ch(4, speed_hz); // check channel 4 (X direction)
-    printf("X = %d", joyVal_X);
+
     int joyVal_Y = read_ch(5, speed_hz); // check channel 5 (Y direction)
-    printf("Y = %d", joyVal_Y);
+
 
     static int yLowCount = 0;       // persists between calls
     if (joyVal_Y < 1500) {
@@ -43,9 +43,6 @@ JoyDir getJoyDir(uint32_t speed_hz) { // We always want to check both channels (
     else if (joyVal_Y > 2600) {
         return UP;
     }
-    // else if (joyVal_Y < 1500) {
-    //     return DOWN;
-    // }
     else if (joyVal_X > 2600) {
         return RIGHT;
     }
@@ -59,8 +56,6 @@ JoyDir getJoyDir(uint32_t speed_hz) { // We always want to check both channels (
 
 static void* JoyStick_thread(void *arg) {
     uint32_t speed_hz = 250000;
-    // const char* dev = "/dev/spidev0.0"; // point to the SPI 0 device (joystick)
-    // fd = spi_init(dev, speed_hz, &is_initialized); // Initialize joystick over SPI
     JoyDir playerDir;
 
     while (joystick_on) {

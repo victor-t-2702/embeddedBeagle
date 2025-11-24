@@ -154,14 +154,6 @@ static void* udp_listener(void* arg) {
             }
         }
         else if (strcasecmp(buffer, "stop 0") == 0 || strcasecmp(buffer, "stop") == 0) {
-            //int val;
-            //int assigned_items = sscanf(buffer, "stop %d", &val);
-
-            // char reply[6];
-            // strcpy(reply, "OK");
-            // sendto(sockfd, reply, strlen(reply), 0,
-            //     (struct sockaddr*)&client_addr, len);
-
             const char* enterReply = "OK";
             sendto(sockfd, enterReply, strlen(enterReply), 0,
                    (struct sockaddr*)&client_addr, len);

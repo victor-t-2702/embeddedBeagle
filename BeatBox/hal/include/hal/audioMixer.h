@@ -38,6 +38,7 @@ void setBeatType(int newBeatType);
 int getBPM();
 void setBPM (int newBPM);
 
+// queue individual wave files (for website and air drum)
 void playBase(void);
 void playHiHat(void);
 void playSnare(void);

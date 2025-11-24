@@ -14,11 +14,8 @@ typedef enum {
     UNDEFINED
 } JoyDir;
 
-
-
+// Initialize joystick over SPI
 void joystick_init();
-
-
 
 // Pool SPI to get direction joystick is pushed
 JoyDir getJoyDir(uint32_t speed_hz);
