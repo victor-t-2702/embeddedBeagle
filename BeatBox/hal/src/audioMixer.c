@@ -11,6 +11,7 @@
 #include <limits.h>
 #include <alloca.h> // needed for mixer
 #include "hal/audioMixer.h"
+#include "hal/periodTimer.h"
 //#include "/home/victor/embeddedBeagle/work/BeatBox/hal/include/hal/audioMixer.h"
 
 static bool beat_on = false;
@@ -356,6 +357,7 @@ static void fillPlaybackBuffer(short *buff, int size)
 	}
 
 	pthread_mutex_unlock(&audioMutex);
+	Period_markEvent(PERIOD_EVENT_FILL_AUDIO_BUFFER);
 
 
 

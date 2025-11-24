@@ -17,32 +17,22 @@ int main(void)
     AudioMixer_init(); // start beat sequencing and playback thread
     spi_init("/dev/spidev0.0", 500);
     accelerometer_init();
-    startPolling(); // Start rotary encoder polling thread
     joystick_init();
+    startPolling(); // Start rotary encoder polling thread
     terminal_start();
-    //startPolling(); // Start rotary encoder polling thread
-    //extern int beatType;
-    //extern int BPM;
+
 
     while(1) {
-        setBeatType(2);
-        //beatType = 2;
-        sleep(5);
-        //beatType = 1;
-        sleep(10);
-        //BPM = 200;
-        sleep(10);
-        
+        sleep(1);
     }
 
     printf("Cleaning up...\n");
     terminal_stop();
     Period_cleanup();
-    //endPolling(); // end rotary encoder thread
-    spi_close();
-    AudioMixer_cleanup(); // Cleans up and stops playback and beat sequencing threads   
+    endPolling(); // end rotary encoder thread
     accelerometer_cleanup();
     joystickStop();
-
+    spi_close();
+    AudioMixer_cleanup(); // Cleans up and stops playback and beat sequencing threads   
     return 0;
 }
