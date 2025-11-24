@@ -7,11 +7,12 @@
 #include "hal/accessSPI.h"
 #include "hal/accelerometer.h"
 #include "hal/terminal.h"
-
+#include "hal/periodTimer.h"
 
 int main(void)
 {
     printf("Initializing audio mixer...\n");
+    Period_init();
     AudioMixer_init(); // start beat sequencing and playback thread
     spi_init("/dev/spidev0.0", 500);
     accelerometer_init();
@@ -33,6 +34,7 @@ int main(void)
 
     printf("Cleaning up...\n");
     terminal_stop();
+    Period_cleanup();
     //endPolling(); // end rotary encoder thread
     spi_close();
     AudioMixer_cleanup(); // Cleans up and stops playback and beat sequencing threads   

@@ -15,19 +15,17 @@
 static bool is_initialized = false;
 static bool reading = false;
 
-static bool isPaused = false;
 
 static pthread_t accelThread;
 
 static void* detectMovement(void* arg);
 
 typedef struct{
-    int x;
-    int y;
-    int z;
+    int magnitude;
+    long long pauseStartTime;
+    bool paused;
 }direction;
 
-direction movementVector;
 
 
 static long long getTimeInMs(void)
@@ -50,65 +48,79 @@ void accelerometer_init(void){
     }
 }
 
+
 static void* detectMovement(void* arg){
     assert(is_initialized);
-    movementVector.x = 0;
-    movementVector.y = 0;
-    movementVector.z = 0;
-    long long startTime = 0;
+    direction x = {0};
+    direction y = {0};
+    direction z = {0};
     while(reading){
-        movementVector.x = read_ch(1, 500);
-        movementVector.y = read_ch(2, 500);
-        movementVector.z = read_ch(3, 500);
+        x.magnitude = read_ch(1, 500);
+        y.magnitude = read_ch(2, 500);
+        z.magnitude = read_ch(3, 500);
 
-        //printf("%d, %d, %d\n", movementVector.x, movementVector.y, movementVector.z);
-
-        if(movementVector.x > BASELINE*1.01){
-            if(!isPaused){
-                playBase();
-                isPaused = true;
-                startTime = getTimeInMs();
-            }
-        }
-        else if(movementVector.x <= BASELINE){
-            if(isPaused){
-                isPaused = false;
-            }
-        }
-
-
-        if(movementVector.y > BASELINE*1.01){
-            if(!isPaused){
-                playHiHat();
-                isPaused = true;
-                startTime = getTimeInMs();
-            }
-        }
-        else if(movementVector.y <= BASELINE){
-            if(isPaused){
-                isPaused = false;
-            }
-        }
-
-
-
-        if(movementVector.z > BASELINE*1.3){
-            if(!isPaused){
+        printf("%d, %d, %d\n", x.magnitude, y.magnitude, z.magnitude);
+        if(x.magnitude > BASELINE*1.01){
+            if(!x.paused){
                 playSnare();
-                isPaused = true;
-                startTime = getTimeInMs();
+                x.paused = true;
+                x.pauseStartTime = getTimeInMs();
             }
         }
-        else if(movementVector.z <= BASELINE){
-            if(isPaused){
-                isPaused = false;
+        else if(x.magnitude <= 0.8*BASELINE){
+            if(x.paused){
+                x.paused = false;
             }
         }
 
 
-        if(getTimeInMs()-startTime >= DEBOUNCE_TIME){
-            if(isPaused){
-                isPaused = false;
+        if(y.magnitude > BASELINE*1.01){
+            if(!y.paused){
+                playHiHat();
+                y.paused = true;
+                y.pauseStartTime = getTimeInMs();
+            }
+        }
+        else if(y.magnitude <= 0.8*BASELINE){
+            if(y.paused){
+                y.paused = false;
+            }
+        }
+
+
+
+        if(z.magnitude > BASELINE*1.3){
+            if(!z.paused){
+                playBase();
+                z.paused = true;
+                z.pauseStartTime = getTimeInMs();
+            }
+        }
+        else if(z.magnitude <= 0.8*BASELINE){
+            if(z.paused){
+                z.paused = false;
+            }
+        }
+
+        long long x_elapsedTime = getTimeInMs() - x.pauseStartTime;
+        long long y_elaspedTime = getTimeInMs() - y.pauseStartTime;
+        long long z_elapsedTime = getTimeInMs() - z.pauseStartTime;
+
+        if(x_elapsedTime >= DEBOUNCE_TIME){
+            if(x.paused){
+                x.paused = false;
+            }
+        }
+
+        if(y_elaspedTime >= DEBOUNCE_TIME){
+            if(y.paused){
+                y.paused = false;
+            }
+        }
+
+        if(z_elapsedTime >= DEBOUNCE_TIME){
+            if(z.paused){
+                z.paused = false;
             }
         }
         usleep(100000);

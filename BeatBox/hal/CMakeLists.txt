@@ -17,6 +17,7 @@
 file(GLOB HAL_SOURCES "src/*.c")
 file(GLOB MY_SOURCES "src/*.c" "src/accelerometer.c")
 file(GLOB MY_SOURCES "src/*.c" "src/terminal.c")
+file(GLOB MY_SOURCES "src/*.c" "src/terminal.c")
 
 # Build static library
 add_library(hal STATIC ${HAL_SOURCES})
