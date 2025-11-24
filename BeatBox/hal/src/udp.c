@@ -66,7 +66,7 @@ static void* udp_listener(void* arg) {
         // strstr returns a pointer to the first occurrence of subString in mainString,
         // or NULL if subString is not found.
         if (strstr(buffer, "volume") != NULL) {
-            if (strstr(buffer, "NULL") != NULL) {
+            if (strstr(buffer, "null") != NULL) {
                 char reply[6];
                 sprintf (reply, "%d", AudioMixer_getVolume());
                 sendto(sockfd, reply, strlen(reply), 0,
@@ -88,7 +88,7 @@ static void* udp_listener(void* arg) {
             }
         } 
         else if (strstr(buffer, "tempo") != NULL) {
-            if (strstr(buffer, "NULL") != NULL) {
+            if (strstr(buffer, "null") != NULL) {
                 char reply[6];
                 sprintf (reply, "%d", getBPM());
                 sendto(sockfd, reply, strlen(reply), 0,
@@ -110,7 +110,7 @@ static void* udp_listener(void* arg) {
             }
         } 
         else if (strstr(buffer, "mode") != NULL) {
-            if (strstr(buffer, "NULL") != NULL) {
+            if (strstr(buffer, "null") != NULL) {
                 char reply[6];
                 sprintf (reply, "%d", getBeatType());
                 sendto(sockfd, reply, strlen(reply), 0,

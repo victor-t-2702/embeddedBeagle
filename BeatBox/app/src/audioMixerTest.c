@@ -9,6 +9,7 @@
 #include "hal/terminal.h"
 #include "hal/joyStick.h"
 #include "hal/periodTimer.h"
+#include "hal/udp.h"
 
 int main(void)
 {
@@ -20,6 +21,7 @@ int main(void)
     joystick_init();
     startPolling(); // Start rotary encoder polling thread
     terminal_start();
+    udp_start();
 
 
     while(1) {
@@ -27,6 +29,7 @@ int main(void)
     }
 
     printf("Cleaning up...\n");
+    udp_stop();
     terminal_stop();
     Period_cleanup();
     endPolling(); // end rotary encoder thread
@@ -34,5 +37,6 @@ int main(void)
     joystickStop();
     spi_close();
     AudioMixer_cleanup(); // Cleans up and stops playback and beat sequencing threads   
+
     return 0;
 }
