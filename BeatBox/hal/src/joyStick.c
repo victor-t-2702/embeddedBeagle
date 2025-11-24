@@ -60,11 +60,11 @@ static void* JoyStick_thread(void *arg) {
         }
         else if (playerDir == UP) {
             AudioMixer_setVolume((AudioMixer_getVolume()+5));
-            usleep(50000); // 50 ms
+            usleep(250000); // 0.25 sec
         }
         else if (playerDir == DOWN) {
             AudioMixer_setVolume((AudioMixer_getVolume()-5));
-            usleep(50000); // 50 ms
+            usleep(250000); // 0.25 sec
         }
     }
     return arg;
