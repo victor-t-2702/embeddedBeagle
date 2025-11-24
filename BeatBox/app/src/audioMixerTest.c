@@ -10,6 +10,8 @@
 #include "hal/joyStick.h"
 #include "hal/periodTimer.h"
 
+extern volatile bool programActive;
+
 int main(void)
 {
     printf("Initializing audio mixer...\n");
@@ -22,7 +24,7 @@ int main(void)
     terminal_start();
 
 
-    while(1) {
+    while(!stopProgram) {
         sleep(1);
     }
 
