@@ -9,75 +9,114 @@
 #include "hal/audioMixer.h"
 #include "hal/accessSPI.h"
 
+#define BASELINE 2048
+#define DEBOUNCE_TIME 300
+
 static bool is_initialized = false;
 static bool reading = false;
+
+static bool isPaused = false;
 
 static pthread_t accelThread;
 
 static void* detectMovement(void* arg);
 
-int xMoveCount = 0;
-int yMoveCount = 0;
-int zMoveCount = 0;
+typedef struct{
+    int x;
+    int y;
+    int z;
+}direction;
+
+direction movementVector;
 
 
+static long long getTimeInMs(void)
+{
+    struct timespec spec;
+    clock_gettime(CLOCK_REALTIME, &spec);
+    long long seconds = spec.tv_sec;
+    long long nanoSeconds = spec.tv_nsec;
+    long long milliSeconds = seconds * 1000 + nanoSeconds / 1000000;
+    return milliSeconds;
+}
 
 void accelerometer_init(void){
     assert(!is_initialized);
     is_initialized = true;
     reading = true;
     if (pthread_create(&accelThread, NULL, detectMovement, NULL) != 0) {
-        perror("Failed to create beat thread");
+        perror("Failed to create accelerometer thread");
         return;
     }
 }
 
 static void* detectMovement(void* arg){
     assert(is_initialized);
-    int x_val = 0;
-    int y_val = 0;
-    int z_val = 0;
+    movementVector.x = 0;
+    movementVector.y = 0;
+    movementVector.z = 0;
+    long long startTime = 0;
     while(reading){
-        x_val = read_ch(1, 500);
-        y_val = read_ch(2, 500);
-        z_val = read_ch(3, 500);
+        movementVector.x = read_ch(1, 500);
+        movementVector.y = read_ch(2, 500);
+        movementVector.z = read_ch(3, 500);
 
-        printf("%d,%d,%d\n", x_val, y_val, z_val);
+        //printf("%d, %d, %d\n", movementVector.x, movementVector.y, movementVector.z);
 
-        if(x_val > 2200){
-
-            printf("Move x + 1\n");
-            xMoveCount++;
+        if(movementVector.x > BASELINE*1.01){
+            if(!isPaused){
+                playBase();
+                isPaused = true;
+                startTime = getTimeInMs();
+            }
+        }
+        else if(movementVector.x <= BASELINE){
+            if(isPaused){
+                isPaused = false;
+            }
         }
 
-        if(y_val > 2200){
-            printf("Move y + 1\n");
-            yMoveCount++;
+
+        if(movementVector.y > BASELINE*1.01){
+            if(!isPaused){
+                playHiHat();
+                isPaused = true;
+                startTime = getTimeInMs();
+            }
+        }
+        else if(movementVector.y <= BASELINE){
+            if(isPaused){
+                isPaused = false;
+            }
         }
 
-        if(z_val > 2000){
-            playBase();
-            //printf("Move z + 1\n");
-            //zMoveCount++;
+
+
+        if(movementVector.z > BASELINE*1.3){
+            if(!isPaused){
+                playSnare();
+                isPaused = true;
+                startTime = getTimeInMs();
+            }
         }
-        usleep(107860);
+        else if(movementVector.z <= BASELINE){
+            if(isPaused){
+                isPaused = false;
+            }
+        }
+
+
+        if(getTimeInMs()-startTime >= DEBOUNCE_TIME){
+            if(isPaused){
+                isPaused = false;
+            }
+        }
+        usleep(100000);
     }
 
     return arg;
 }
 
-void playSound(void){
-    assert(is_initialized);
-    if(zMoveCount > 10){
-        playBase();
-    }
-    if(yMoveCount > 10){
-        playHiHat();
-    }
-    if(xMoveCount > 10){
-        playSnare();
-    }
-}
 
 void accelerometer_cleanup(void){
     assert(is_initialized);
