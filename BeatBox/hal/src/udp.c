@@ -158,13 +158,13 @@ static void* udp_listener(void* arg) {
             int assigned_items = sscanf(buffer, "stop %d", &val);
 
             if (assigned_items == 1) {
-                if (val == 0) {
-                    programActive = false; // terminate program
-                }
                 char reply[6];
                 sprintf (reply, "OK");
                 sendto(sockfd, reply, strlen(reply), 0,
                     (struct sockaddr*)&client_addr, len);
+                if (val == 0) {
+                    programActive = false; // terminate program
+                }
             } else {
                 printf("Failed to parse all values.\n");
             }
