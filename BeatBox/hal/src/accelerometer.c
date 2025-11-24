@@ -10,9 +10,11 @@
 #include "hal/accessSPI.h"
 #include "hal/periodTimer.h"
 
+//Values to determine the debouncing 
 #define BASELINE 2048
 #define DEBOUNCE_TIME 400
 
+//Flags for the initialization and the thread running
 static bool is_initialized = false;
 static bool reading = false;
 
@@ -21,6 +23,7 @@ static pthread_t accelThread;
 
 static void* detectMovement(void* arg);
 
+//A struct for each axis that holds the magnitude, pausing start time, and the pause flag
 typedef struct{
     int magnitude;
     long long pauseStartTime;
@@ -49,7 +52,7 @@ void accelerometer_init(void){
     }
 }
 
-
+//This is the main thread function that continually detects movment, and playing a sound based on acceleration
 static void* detectMovement(void* arg){
     assert(is_initialized);
     direction x = {0};
@@ -60,8 +63,8 @@ static void* detectMovement(void* arg){
         y.magnitude = read_ch(2, 500);
         z.magnitude = read_ch(3, 500);
 
-        //printf("%d, %d, %d\n", x.magnitude, y.magnitude, z.magnitude);
-        if(x.magnitude > BASELINE*1.03){
+        //If the magnitude reaches baseline, play sound, then pause 
+        if(x.magnitude > BASELINE){
             if(!x.paused){
                 playSnare();
                 x.paused = true;
@@ -71,7 +74,7 @@ static void* detectMovement(void* arg){
         }
 
 
-        if(y.magnitude > BASELINE*1.03){
+        if(y.magnitude > BASELINE){
             if(!y.paused){
                 playHiHat();
                 y.paused = true;
@@ -81,7 +84,7 @@ static void* detectMovement(void* arg){
         }
 
 
-
+        //z axis requires a higher baseline
         if(z.magnitude > BASELINE*1.3){
             if(!z.paused){
                 playBase();
@@ -91,10 +94,12 @@ static void* detectMovement(void* arg){
             }
         }
 
+        
         long long x_elapsedTime = getTimeInMs() - x.pauseStartTime;
         long long y_elaspedTime = getTimeInMs() - y.pauseStartTime;
         long long z_elapsedTime = getTimeInMs() - z.pauseStartTime;
 
+        //Check if we have paused for enough time
         if(x_elapsedTime >= DEBOUNCE_TIME){
             if(x.paused){
                 x.paused = false;

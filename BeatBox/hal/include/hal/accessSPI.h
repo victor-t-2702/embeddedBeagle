@@ -8,6 +8,7 @@
 
 void spi_init(const char* dev, uint32_t speed_hz);
 
+//Call read channel to read the adc channels, specifying the channel and rate
 int read_ch(int ch, uint32_t speed_hz);
 
 void spi_close();
