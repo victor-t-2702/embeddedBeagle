@@ -6,24 +6,11 @@
 #include <stdint.h>
 
 
+int spi_init(const char* dev, uint32_t speed_hz, bool *is_initialized);
 
-typedef enum {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-    CENTER,
-    UNDEFINED
-} JoyDir;
+int read_ch(int fd, int ch, uint32_t speed_hz, bool is_initialized);
 
-void spi_init(const char* dev, uint32_t speed_hz);
+void spi_close(int fd, bool *is_initialized);
 
-int read_ch(int ch, uint32_t speed_hz);
-
-//static void* JoyStick_thread(void *arg);
-
-void spi_close();
-
-//JoyDir getJoyDir(int fd, uint32_t speed_hz);
 
 #endif

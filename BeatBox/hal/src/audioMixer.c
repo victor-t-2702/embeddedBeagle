@@ -473,21 +473,6 @@ void setBPM (int newBPM) {
 	pthread_mutex_unlock(&audioMutex);
 }
 
-// expose static volume variable
-int getVolume() {
-	return volume;
-}
-// set new volume
-void setVolume(int newVolume) {
-	int tempVolume = newVolume;
-	if (tempVolume >= AUDIOMIXER_MAX_VOLUME) {
-		tempVolume = AUDIOMIXER_MAX_VOLUME;
-	}
-	pthread_mutex_lock(&audioMutex);
-	volume = tempVolume;
-	pthread_mutex_unlock(&audioMutex);
-}
-
 
 // Beat setup thread (sequences the beat)
 static void* beatPlayer(void *arg) {

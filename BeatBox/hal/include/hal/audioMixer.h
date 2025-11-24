@@ -38,10 +38,6 @@ void setBeatType(int newBeatType);
 int getBPM();
 void setBPM (int newBPM);
 
-// Get/set the volume.
-int getVolume();
-void setVolume(int newBPM);
-
 void playBase(void);
 void playHiHat(void);
 void playSnare(void);
