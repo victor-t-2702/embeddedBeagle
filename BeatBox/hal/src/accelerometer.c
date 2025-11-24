@@ -8,9 +8,10 @@
 #include <stdbool.h>
 #include "hal/audioMixer.h"
 #include "hal/accessSPI.h"
+#include "hal/periodTimer.h"
 
 #define BASELINE 2048
-#define DEBOUNCE_TIME 300
+#define DEBOUNCE_TIME 400
 
 static bool is_initialized = false;
 static bool reading = false;
@@ -59,31 +60,23 @@ static void* detectMovement(void* arg){
         y.magnitude = read_ch(2, 500);
         z.magnitude = read_ch(3, 500);
 
-        printf("%d, %d, %d\n", x.magnitude, y.magnitude, z.magnitude);
-        if(x.magnitude > BASELINE*1.01){
+        //printf("%d, %d, %d\n", x.magnitude, y.magnitude, z.magnitude);
+        if(x.magnitude > BASELINE*1.03){
             if(!x.paused){
                 playSnare();
                 x.paused = true;
                 x.pauseStartTime = getTimeInMs();
-            }
-        }
-        else if(x.magnitude <= 0.8*BASELINE){
-            if(x.paused){
-                x.paused = false;
+                Period_markEvent(PERIOD_ACCELRATION);
             }
         }
 
 
-        if(y.magnitude > BASELINE*1.01){
+        if(y.magnitude > BASELINE*1.03){
             if(!y.paused){
                 playHiHat();
                 y.paused = true;
                 y.pauseStartTime = getTimeInMs();
-            }
-        }
-        else if(y.magnitude <= 0.8*BASELINE){
-            if(y.paused){
-                y.paused = false;
+                Period_markEvent(PERIOD_ACCELRATION);
             }
         }
 
@@ -94,11 +87,7 @@ static void* detectMovement(void* arg){
                 playBase();
                 z.paused = true;
                 z.pauseStartTime = getTimeInMs();
-            }
-        }
-        else if(z.magnitude <= 0.8*BASELINE){
-            if(z.paused){
-                z.paused = false;
+                Period_markEvent(PERIOD_ACCELRATION);
             }
         }
 
@@ -123,7 +112,7 @@ static void* detectMovement(void* arg){
                 z.paused = false;
             }
         }
-        usleep(10000);
+        usleep(1000);
     }
 
     return arg;
@@ -132,8 +121,7 @@ static void* detectMovement(void* arg){
 
 void accelerometer_cleanup(void){
     assert(is_initialized);
+    reading = false;                 // STOP LOOP FIRST
+    pthread_join(accelThread, NULL); // then wait for thread to exit
     is_initialized = false;
-    pthread_join(accelThread, NULL);
-    reading = false;
-    
 }
