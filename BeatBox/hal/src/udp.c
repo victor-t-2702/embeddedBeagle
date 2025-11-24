@@ -146,7 +146,7 @@ static void* udp_listener(void* arg) {
                     playSnare();
                 }
                 char reply[6];
-                sprintf (reply, "%d", getBPM());
+                sprintf (reply, "OK");
                 sendto(sockfd, reply, strlen(reply), 0,
                     (struct sockaddr*)&client_addr, len);
             } else {
