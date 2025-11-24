@@ -171,6 +171,7 @@ static void* udp_listener(void* arg) {
     }
     sockfd = -1;
     return arg;
+    }
 }
 
 // Start UDP thread
