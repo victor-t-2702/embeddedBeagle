@@ -46,6 +46,8 @@ void spi_init(const char* dev, uint32_t speed_hz) {
         perror("speed");
         return;
     }
+
+    is_initialized = true;
 }
 
 // Read a channel from MCP3208 ADC chip
