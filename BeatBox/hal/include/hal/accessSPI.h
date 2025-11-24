@@ -6,11 +6,11 @@
 #include <stdint.h>
 
 
-int spi_init(const char* dev, uint32_t speed_hz, bool *is_initialized);
+void spi_init(const char* dev, uint32_t speed_hz);
 
-int read_ch(int fd, int ch, uint32_t speed_hz, bool is_initialized);
+int read_ch(int ch, uint32_t speed_hz);
 
-void spi_close(int fd, bool *is_initialized);
+void spi_close();
 
 
 #endif

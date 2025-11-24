@@ -18,14 +18,13 @@
 
 static bool is_initialized = false; // bool to easily check if joystick is initialized
 static bool joystick_on = false;
-static int fd = 0;
 
-JoyDir getJoyDir(int fd, uint32_t speed_hz) { // We always want to check both channels (i.e. x and y directions)
+JoyDir getJoyDir(uint32_t speed_hz) { // We always want to check both channels (i.e. x and y directions)
     assert(is_initialized); // check if joystick has been properly initialized
     
-    int joyVal_X = read_ch(fd, 0, speed_hz, is_initialized); // check channel 0 (X direction)
+    int joyVal_X = read_ch(4, speed_hz); // check channel 0 (X direction)
     //printf("X = %d", joyVal_X);
-    int joyVal_Y = read_ch(fd, 1, speed_hz, is_initialized); // check channel 1 (Y direction)
+    int joyVal_Y = read_ch(5, speed_hz); // check channel 1 (Y direction)
     //printf("Y = %d", joyVal_Y);
 
     if (joyVal_Y <= 2600 && joyVal_Y >= 1500 && joyVal_X <= 2600 && joyVal_X >= 1500) {
@@ -50,12 +49,12 @@ JoyDir getJoyDir(int fd, uint32_t speed_hz) { // We always want to check both ch
 
 static void* JoyStick_thread(void *arg) {
     uint32_t speed_hz = 250000;
-    const char* dev = "/dev/spidev0.0"; // point to the SPI 0 device (joystick)
-    fd = spi_init(dev, speed_hz, &is_initialized); // Initialize joystick over SPI
+    // const char* dev = "/dev/spidev0.0"; // point to the SPI 0 device (joystick)
+    // fd = spi_init(dev, speed_hz, &is_initialized); // Initialize joystick over SPI
     JoyDir playerDir;
 
     while (joystick_on) {
-        playerDir = getJoyDir(fd, speed_hz); // record what direction player pressed
+        playerDir = getJoyDir(speed_hz); // record what direction player pressed
         if (playerDir == CENTER || playerDir == RIGHT || playerDir == LEFT) { 
             usleep(5000); // if no input or invalid input, restart loop
         }
@@ -83,14 +82,11 @@ void joystick_init() {
     }
 }
 
-static void joystickCleanup() {
-    spi_close(fd, &is_initialized);
-}
-
 void joystickStop() {
     assert(joystick_on);
+    assert(is_initialized);
     joystick_on = false;
     pthread_join(joystickThreadID, NULL);
-    joystickCleanup();
+    is_initialized = false;
 }
 
