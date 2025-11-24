@@ -32,11 +32,11 @@ int main(void)
     printf("Cleaning up...\n");
     udp_stop();
     terminal_stop();
-    Period_cleanup();
     endPolling(); // end rotary encoder thread
     accelerometer_cleanup();
     joystickStop();
     spi_close();
+    Period_cleanup();
     AudioMixer_cleanup(); // Cleans up and stops playback and beat sequencing threads   
 
     return 0;
