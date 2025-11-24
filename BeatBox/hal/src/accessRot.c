@@ -15,14 +15,14 @@
 #include "hal/audioMixer.h"
 #include "hal/accessRot.h"
 
-/*
+
 static bool is_initialized = false; // Flag to ensure module is initialized
 static bool polling_on = false; // Flag to ensure thread is supposed to be running
 pthread_t pollThread; // Polling thread
 
 
-// Initializes the rotary gpio chip and lines (2 lines)
-int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB)
+// Initializes the rotary gpio chip and lines (3 lines)
+int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigned int pinB, unsigned int pinC)
 {
     
     assert(!is_initialized);
@@ -32,6 +32,7 @@ int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigne
 
     rot->offsets[0] = pinA;
     rot->offsets[1] = pinB;
+    rot->offsets[2] = pinC;
     rot->pulses = 0;
 
     rot->chip = gpiod_chip_open(chip_path);
@@ -65,6 +66,7 @@ int rotary_init(rotary_t *rot, const char *chip_path, unsigned int pinA, unsigne
     }
 
     rot->lastA = vals[0];
+    rot->lastC = vals[2];
     is_initialized = true;
     return 0;
 }
@@ -91,9 +93,28 @@ static int rotary_poll(rotary_t *rot)
         return rot->pulses;
     }
 
-    
     int A = vals[0];
     int B = vals[1];
+    int C = vals[2];
+
+    // button press debouncing
+    static long long lastPressTime = 0;
+    long long now = getTimeInMs();
+
+    // falling edge detection for button: lastC = 1, now C = 0
+    if (C == 0 && rot->lastC == 1) {
+        if (now - lastPressTime > 200) {   // 200ms debounce
+            int beat = getBeatType();
+            setBeatType((beat + 1) % 3);   // cycles 0→1→2→0
+
+            printf("Button pressed! Beat type now %d\n", getBeatType());
+
+            lastPressTime = now;
+        }
+    }
+
+    rot->lastC = C; // save button state
+
 
     if (A == 1 && rot->lastA == 0) {
         if (B != A)
@@ -137,7 +158,7 @@ static void* pollingThread(void *arg) {
 
 
 
-    if (rotary_init(&rot, "/dev/gpiochip1", 41, 33) < 0) {
+    if (rotary_init(&rot, "/dev/gpiochip1", 41, 33, 43) < 0) { // 43 IS A PLACE HOLDER!!!!!!!!
         printf("Failed to initialize rotary encoder");
         return NULL;
     }
@@ -181,5 +202,3 @@ void endPolling() {
     polling_on = false;
     pthread_join(pollThread, NULL);
 }
-
-*/
