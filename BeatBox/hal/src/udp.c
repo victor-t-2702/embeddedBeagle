@@ -161,7 +161,7 @@ static void* udp_listener(void* arg) {
             sprintf (reply, "OK");
             sendto(sockfd, reply, strlen(reply), 0,
                 (struct sockaddr*)&client_addr, len);
-            programActive = false; // terminate program
+            //programActive = false; // terminate program
         }
         
     }
